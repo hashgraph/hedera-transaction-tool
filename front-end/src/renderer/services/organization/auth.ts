@@ -122,15 +122,20 @@ export const signUp = (
   email: string;
   createdAt: string;
 }> =>
-  commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.post(
-      `${organizationServerUrl}/${authController}/signup`,
-      {
-        email,
-      },
-    );
-    return response.data;
-  }, 'Failed to sign up the user');
+  commonRequestHandler(
+    async () => {
+      const response = await axiosWithCredentials.post(
+        `${organizationServerUrl}/${authController}/signup`,
+        {
+          email,
+        },
+      );
+      return response.data;
+    },
+    'Failed to sign up the user',
+    undefined,
+    { 422: 'Email already exists' },
+  );
 
 /* ADMIN ONLY: elevate a user to admin */
 export const elevateUserToAdmin = (organizationServerUrl: string, id: number) =>
