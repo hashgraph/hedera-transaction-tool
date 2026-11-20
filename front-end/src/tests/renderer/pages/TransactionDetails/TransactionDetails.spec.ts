@@ -432,29 +432,36 @@ describe('TransactionDetails.vue — fetch failure reporting and recovery', () =
     loggerErrorMock.mockClear();
   });
 
-  test('shows and logs the real transactionId carried from the list, not the DB id', async () => {
+  test('shows the real transactionId carried from the list and logs both ids', async () => {
     routeMock.query = { txId: '0.0.101@123456.0001' };
+    const cause = new Error('network blip');
+    lookupMock.mockRejectedValue(cause);
+
+    await mountFailingDetails();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).not.toBeNull();
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      'Failed to load transaction',
+      expect.objectContaining({ dbId: '101', sdkTransactionId: '0.0.101@123456.0001', cause }),
+    );
+  });
+
+  test('shows a generic message (never the DB id) when no real transactionId is known, and logs the DB id', async () => {
     lookupMock.mockRejectedValue(new Error('network blip'));
 
     await mountFailingDetails();
 
     expect(
-      toastManager.findEntry('Failed to get transaction with id 0.0.101@123456.0001', 'error'),
+      toastManager.findEntry(
+        'Failed to load transaction. Please contact your administrator.',
+        'error',
+      ),
     ).not.toBeNull();
+    expect(toastManager.findEntry('101', 'error')).toBeNull();
     expect(loggerErrorMock).toHaveBeenCalledWith(
-      'Failed to get transaction with id 0.0.101@123456.0001',
-      expect.objectContaining({ dbId: '101', sdkTransactionId: '0.0.101@123456.0001' }),
-    );
-  });
-
-  test('falls back to the DB id when no real transactionId is known yet', async () => {
-    lookupMock.mockRejectedValue(new Error('network blip'));
-
-    await mountFailingDetails();
-
-    expect(toastManager.findEntry('Failed to get transaction with id 101', 'error')).not.toBeNull();
-    expect(loggerErrorMock).toHaveBeenCalledWith(
-      'Failed to get transaction with id 101',
+      'Failed to load transaction',
       expect.objectContaining({ dbId: '101', sdkTransactionId: undefined }),
     );
   });

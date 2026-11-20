@@ -242,33 +242,36 @@ const knownSdkTransactionId = computed(() => {
 
 /* Functions */
 
-// The DB/local id alone isn't meaningful to a user; prefer the real transactionId when we have
-// one, either from a previous successful load of this same transaction (e.g. a websocket-
-// triggered refetch) or from the route query carried over from the list that was navigated from.
+// Logs everything we know about a failed fetch (both the DB/local id and the real Hedera id,
+// when available) and returns the error to throw. The user-facing message never exposes the DB
+// id: it uses the real transaction id when known, otherwise a generic message. Diagnosis relies
+// on the log.
 function buildTransactionFetchError(
   error: unknown,
   dbId: string,
   previousSdkTransactionId?: string,
 ): Error {
   const sdkTransactionId = previousSdkTransactionId || knownSdkTransactionId.value || undefined;
-  const message = `Failed to get transaction with id ${sdkTransactionId ?? dbId}`;
-  logger.error(message, { dbId, sdkTransactionId, cause: error });
-  return new Error(message);
+  logger.error('Failed to load transaction', { dbId, sdkTransactionId, cause: error });
+  return new Error(
+    sdkTransactionId
+      ? `Failed to load transaction ${sdkTransactionId}`
+      : 'Failed to load transaction. Please contact your administrator.',
+  );
 }
 
 async function fetchTransaction() {
   const id = formattedId.value!;
+  // Captured before any lookup so a failed refetch can still report the id from a prior load
+  const previousSdkTransactionId =
+    orgTransaction.value?.transactionId || localTransaction.value?.transaction_id;
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      try {
-        orgTransaction.value = await appCache.backendTransaction.lookup(
-          Number(id),
-          user.selectedOrganization?.serverUrl || '',
-        );
-      } catch (error) {
-        throw buildTransactionFetchError(error, id, orgTransaction.value?.transactionId);
-      }
+      orgTransaction.value = await appCache.backendTransaction.lookup(
+        Number(id),
+        user.selectedOrganization?.serverUrl || '',
+      );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 
       // To be backwards compatible, check if the groupItem exists but group does not
@@ -289,11 +292,7 @@ async function fetchTransaction() {
         }
       }
     } else {
-      try {
-        localTransaction.value = await getTransaction(id.toString());
-      } catch (error) {
-        throw buildTransactionFetchError(error, id, localTransaction.value?.transaction_id);
-      }
+      localTransaction.value = await getTransaction(id.toString());
       transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
       if (localTransaction.value?.group_id) {
         const localGroup = await getGroup(localTransaction.value.group_id.toString());
@@ -301,13 +300,17 @@ async function fetchTransaction() {
       }
     }
   } catch (error) {
-    throw error;
+    throw buildTransactionFetchError(error, id, previousSdkTransactionId);
   }
 
   try {
     sdkTransaction.value = SDKTransaction.fromBytes(transactionBytes);
-  } catch {
-    throw new Error('Failed to deserialize transaction');
+  } catch (error) {
+    throw buildTransactionFetchError(
+      new Error('Failed to deserialize transaction', { cause: error }),
+      id,
+      previousSdkTransactionId,
+    );
   }
 
   if (!(sdkTransaction.value instanceof SDKTransaction)) {
@@ -337,6 +340,12 @@ async function fetchTransaction() {
       );
     } catch (error) {
       signatureKeyObject.value = null;
+      logger.error('Failed to compute signature key', {
+        dbId: id,
+        sdkTransactionId:
+          orgTransaction.value?.transactionId ?? knownSdkTransactionId.value ?? undefined,
+        cause: error,
+      });
       toastManager.error(getErrorMessage(error, 'Failed to compute signature key'));
     }
   }
@@ -371,7 +380,12 @@ onBeforeMount(async () => {
     // to whatever transactions tab they came from (or its default) instead of leaving them on
     // an infinite loader. Toast manually since catching here stops it from reaching the global
     // onErrorCaptured handler.
-    toastManager.error(getErrorMessage(error, 'An error occurred'));
+    logger.error('Initial transaction load failed; redirecting to transactions list', {
+      dbId: id,
+      sdkTransactionId: knownSdkTransactionId.value ?? undefined,
+      cause: error,
+    });
+    toastManager.error(getErrorMessage(error, 'Failed to load transaction'));
     await redirectToPreviousTransactionsTab(router);
   }
 });
