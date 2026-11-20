@@ -265,7 +265,10 @@ const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
 
 const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
-  const targetNodeId: TransactionNodeId = { transactionId: id };
+  const targetNodeId: TransactionNodeId = {
+    transactionId: id,
+    sdkTransactionId: transaction.value.transactionId?.toString(),
+  };
   await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
   emit('submitted', id, body);
 };
@@ -278,7 +281,10 @@ const handleGroupSubmit = async (id: number) => {
 };
 
 const handleLocalStored = async (id: string) => {
-  const targetNodeId: TransactionNodeId = { transactionId: id };
+  const targetNodeId: TransactionNodeId = {
+    transactionId: id,
+    sdkTransactionId: transaction.value.transactionId?.toString(),
+  };
   await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
 };
 

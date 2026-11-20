@@ -170,23 +170,25 @@ const handleSort = async (
   currentPage.value = 1;
 };
 
-const handleDetails = async (id: string | number) => {
+const handleDetails = async (id: string | number, sdkTransactionId?: string) => {
   let nodeIds: TransactionNodeId[];
   if (isLoggedInOrganization(user.selectedOrganization)) {
     nodeIds = organizationTransactions.value.map(t => {
       return {
         transactionId: t.transactionRaw.id,
+        sdkTransactionId: t.transactionRaw.transactionId,
       };
     });
   } else {
     nodeIds = transactions.value.map(t => {
       return {
         transactionId: t.id,
+        sdkTransactionId: t.transaction_id,
       };
     });
   }
   await nextTransaction.routeDown(
-    { transactionId: id },
+    { transactionId: id, sdkTransactionId },
     nodeIds,
     router,
     TransactionNodeCollection.HISTORY,
@@ -508,7 +510,7 @@ watch(
                   <td class="text-center">
                     <AppButton
                       :data-testid="`button-transaction-details-${index}`"
-                      @click="handleDetails(transaction.id)"
+                      @click="handleDetails(transaction.id, transaction.transaction_id)"
                       color="secondary"
                       log-label="view-transaction-details"
                       :log-metadata="{ transactionId: transaction.id }"
@@ -594,7 +596,12 @@ watch(
                   <td class="text-center">
                     <AppButton
                       :data-testid="`button-transaction-details-${index}`"
-                      @click="handleDetails(transactionData.transactionRaw.id)"
+                      @click="
+                        handleDetails(
+                          transactionData.transactionRaw.id,
+                          transactionData.transactionRaw.transactionId,
+                        )
+                      "
                       color="secondary"
                       log-label="view-transaction-details"
                       :log-metadata="{ transactionId: transactionData.transactionRaw.id }"

@@ -32,7 +32,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'handleDetails', transactionId: number): Promise<void>;
+  (event: 'handleDetails', transactionId: number, sdkTransactionId?: string): Promise<void>;
   (event: 'transactionSigned', transaction: ITransactionFull): void;
 }>();
 
@@ -216,7 +216,14 @@ useRevealed(container, () => {
           :data-testid="`button-group-transaction-${props.rowIndex}`"
           color="secondary"
           type="button"
-          @click.prevent="() => emit('handleDetails', props.groupItem.transactionId)"
+          @click.prevent="
+            () =>
+              emit(
+                'handleDetails',
+                props.groupItem.transactionId,
+                props.groupItem.transaction.transactionId,
+              )
+          "
           log-label="view-group-transaction-details"
           :log-metadata="{ rowIndex: props.rowIndex, transactionId: props.groupItem.transactionId }"
           ><span>Details</span>
