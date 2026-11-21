@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { createHash } from 'crypto';
+
 import { Redis } from 'ioredis';
 
 import { REDIS_CLIENT } from '../redis/redis-client.module';
@@ -9,6 +11,7 @@ import { REDIS_CLIENT } from '../redis/redis-client.module';
 export class BlacklistService {
   private BLACKLISTED = 'blacklisted';
   private USER_INVALID_BEFORE_PREFIX = 'blacklisted:user:';
+  private TOKEN_PREFIX = 'blacklisted:token:';
 
   // The shared connection's lifecycle (including closing it on shutdown) is
   // owned by RedisClientModule, not this service.
@@ -19,7 +22,7 @@ export class BlacklistService {
 
   async blacklistToken(jwt: string | null) {
     if (jwt !== null) {
-      await this.client.set(jwt, this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());
+      await this.client.set(this.getTokenKey(jwt), this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());
     }
   }
 
@@ -38,8 +41,12 @@ export class BlacklistService {
   }
 
   async isTokenBlacklisted(jwt: string) {
-    const data = await this.client.get(jwt);
-    if (data === this.BLACKLISTED) {
+    const [hashed, legacy] = await Promise.all([
+      this.client.get(this.getTokenKey(jwt)),
+      // TODO: remove once all legacy raw-JWT keys have expired (JWT_EXPIRATION after deploy).
+      this.client.get(jwt),
+    ]);
+    if (hashed === this.BLACKLISTED || legacy === this.BLACKLISTED) {
       return true;
     }
 
@@ -64,6 +71,11 @@ export class BlacklistService {
   private getJwtExpirationSeconds(): number {
     const expirationDays = this.configService.get<number>('JWT_EXPIRATION');
     return Number(expirationDays) * 24 * 60 * 60;
+  }
+
+  /* Only a one-way fingerprint is stored so Redis contents can never be replayed as credentials. */
+  private getTokenKey(jwt: string): string {
+    return `${this.TOKEN_PREFIX}${createHash('sha256').update(jwt).digest('hex')}`;
   }
 
   private getUserInvalidationKey(userId: number): string {

@@ -1,3 +1,5 @@
+import { createHash } from 'crypto';
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
@@ -5,6 +7,9 @@ import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService } from '@app/common';
 import { REDIS_CLIENT } from '@app/common';
+
+const hashKey = (jwt: string) =>
+  `blacklisted:token:${createHash('sha256').update(jwt).digest('hex')}`;
 
 describe('BlacklistService', () => {
   let service: BlacklistService;
@@ -43,7 +48,13 @@ describe('BlacklistService', () => {
 
       await service.blacklistToken(jwt);
 
-      expect(client.set).toHaveBeenCalledWith(jwt, 'blacklisted', 'EX', expirationSeconds);
+      expect(client.set).toHaveBeenCalledWith(
+        hashKey(jwt),
+        'blacklisted',
+        'EX',
+        expirationSeconds,
+      );
+      expect(client.set).not.toHaveBeenCalledWith(jwt, expect.anything(), 'EX', expect.anything());
     });
   });
 
@@ -69,12 +80,19 @@ describe('BlacklistService', () => {
     it('should return true if the token is blacklisted', async () => {
       const jwt = 'testToken';
 
-      client.get.mockResolvedValue('blacklisted');
+      client.get.mockImplementation(async key => (key === hashKey(jwt) ? 'blacklisted' : null));
 
       const result = await service.isTokenBlacklisted(jwt);
 
       expect(result).toBe(true);
-      expect(client.get).toHaveBeenCalledWith(jwt);
+    });
+
+    it('should return true for a legacy raw-JWT blacklist entry', async () => {
+      const jwt = 'testToken';
+
+      client.get.mockImplementation(async key => (key === jwt ? 'blacklisted' : null));
+
+      await expect(service.isTokenBlacklisted(jwt)).resolves.toBe(true);
     });
 
     it('should return false if the token is not blacklisted', async () => {
@@ -85,7 +103,13 @@ describe('BlacklistService', () => {
       const result = await service.isTokenBlacklisted(jwt);
 
       expect(result).toBe(false);
-      expect(client.get).toHaveBeenCalledWith(jwt);
+      expect(client.get).toHaveBeenCalledWith(hashKey(jwt));
+    });
+
+    it('should propagate Redis errors so callers fail closed', async () => {
+      client.get.mockRejectedValue(new Error('redis down'));
+
+      await expect(service.isTokenBlacklisted('testToken')).rejects.toThrow('redis down');
     });
 
     it('should reject a JWT issued before the user was removed', async () => {
