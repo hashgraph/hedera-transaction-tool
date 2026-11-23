@@ -37,29 +37,19 @@ const inputStatus = computed<InputStatus>(() => {
 });
 
 /* Hooks */
-watch(
-  fileId,
-  () => {
-    inputText.value = fileId.value?.toString() ?? '';
-  },
-  { immediate: true },
-);
+watch(fileId, () => (inputText.value = fileId.value?.toString() ?? ''));
 
-watch(
-  inputStatus,
-  () => {
-    emit('inputStatus', inputStatus.value);
-  },
-  { immediate: true },
-);
+watch(newFileId, () => {
+  if (inputStatus.value !== InputStatus.invalid) {
+    fileId.value = newFileId.value;
+  }
+});
+
+watch(inputStatus, () => emit('inputStatus', inputStatus.value), { immediate: true });
 </script>
 
 <template>
-  <AppInput
-    v-model:model-value="inputText"
-    :filled="true"
-    placeholder="Enter File ID"
-  />
+  <AppInput v-model:model-value="inputText" :filled="true" placeholder="Enter File ID" />
 </template>
 
 <style scoped></style>

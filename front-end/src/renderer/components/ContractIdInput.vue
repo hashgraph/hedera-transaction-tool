@@ -37,21 +37,15 @@ const inputStatus = computed<InputStatus>(() => {
 });
 
 /* Hooks */
-watch(
-  contractId,
-  () => {
-    inputText.value = contractId.value?.toString() ?? '';
-  },
-  { immediate: true },
-);
+watch(contractId, () => (inputText.value = contractId.value?.toString() ?? ''));
 
-watch(
-  inputStatus,
-  () => {
-    emit('inputStatus', inputStatus.value);
-  },
-  { immediate: true },
-);
+watch(newContractId, () => {
+  if (inputStatus.value !== InputStatus.invalid) {
+    contractId.value = newContractId.value;
+  }
+});
+
+watch(inputStatus, () => emit('inputStatus', inputStatus.value), { immediate: true });
 </script>
 
 <template>
