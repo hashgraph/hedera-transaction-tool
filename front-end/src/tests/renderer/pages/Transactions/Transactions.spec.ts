@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 
 import Transactions from '@renderer/pages/Transactions/Transactions.vue';
 
@@ -8,6 +8,9 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
   importTransactionFile: vi.fn(),
+  fetchBySdkId: vi.fn(),
+  forget: vi.fn(),
+  importSignatures: vi.fn(),
   userStore: {
     selectedOrganization: null as any,
   },
@@ -67,8 +70,19 @@ vi.mock('@renderer/services/transactionFileService.ts', () => ({
 }));
 
 vi.mock('@renderer/services/organization', () => ({
-  importSignatures: vi.fn(),
+  importSignatures: mocks.importSignatures,
 }));
+
+vi.mock('@hiero-ledger/sdk', async () => {
+  const actual = await vi.importActual<typeof import('@hiero-ledger/sdk')>('@hiero-ledger/sdk');
+  return {
+    ...actual,
+    Transaction: {
+      fromBytes: vi.fn(() => ({ transactionId: { toString: () => '0.0.2@1700000000.000000000' } })),
+    },
+    SignatureMap: { _fromTransaction: vi.fn(() => ({})) },
+  };
+});
 
 vi.mock('@renderer/caches/backend/BackendTransactionCache.ts', () => {
   class BackendTransactionCache {
@@ -77,6 +91,8 @@ vi.mock('@renderer/caches/backend/BackendTransactionCache.ts', () => {
     }));
 
     lookup = vi.fn();
+    fetchBySdkId = mocks.fetchBySdkId;
+    forget = mocks.forget;
   }
 
   return {
@@ -113,6 +129,9 @@ describe('Transactions.vue', () => {
     mocks.importTransactionFile.mockResolvedValue({
       kind: 'tx2', fileName: 'transactions.tx2', fileContent: { network: 'testnet', items: [] },
     });
+    mocks.fetchBySdkId.mockReset();
+    mocks.forget.mockReset();
+    mocks.importSignatures.mockReset().mockResolvedValue([]);
     mocks.userStore.selectedOrganization = null;
     mocks.notificationsStore.notifications = {};
   });
@@ -331,5 +350,45 @@ describe('Transactions.vue', () => {
     expect(wrapper.find('[data-testid="dropdown-item-importSignaturesFromFile"]').exists()).toBe(
       true,
     );
+  });
+
+  describe('V2 signature file import', () => {
+    const SDK_ID = '0.0.2@1700000000.000000000';
+    const importFile = () =>
+      mocks.importTransactionFile.mockResolvedValue({
+        kind: 'tx2',
+        fileName: 'transactions.tx2',
+        fileContent: { network: 'testnet', items: [{ transactionBytes: '' }] },
+      });
+
+    test('resolves the file transaction through fetchBySdkId and forgets it by database id', async () => {
+      mocks.userStore.selectedOrganization = { serverUrl: 'https://org.example.com' };
+      importFile();
+      mocks.fetchBySdkId.mockResolvedValue({ id: 42, transactionId: SDK_ID });
+
+      const wrapper = mountTransactions();
+      await wrapper.find('[data-testid="dropdown-item-importSignaturesFromFile"]').trigger('click');
+      await flushPromises();
+
+      expect(mocks.fetchBySdkId).toHaveBeenCalledWith(SDK_ID, 'https://org.example.com');
+      expect(mocks.importSignatures).toHaveBeenCalledWith(
+        mocks.userStore.selectedOrganization,
+        [expect.objectContaining({ id: 42 })],
+      );
+      expect(mocks.forget).toHaveBeenCalledWith(42, 'https://org.example.com');
+    });
+
+    test('does not import when the transaction is unknown to the backend', async () => {
+      mocks.userStore.selectedOrganization = { serverUrl: 'https://org.example.com' };
+      importFile();
+      mocks.fetchBySdkId.mockRejectedValue(new Error('404'));
+
+      const wrapper = mountTransactions();
+      await wrapper.find('[data-testid="dropdown-item-importSignaturesFromFile"]').trigger('click');
+      await flushPromises();
+
+      expect(mocks.importSignatures).not.toHaveBeenCalled();
+      expect(mocks.forget).not.toHaveBeenCalled();
+    });
   });
 });

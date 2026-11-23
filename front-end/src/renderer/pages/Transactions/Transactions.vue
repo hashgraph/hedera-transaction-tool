@@ -251,7 +251,7 @@ async function importSignaturesFromV2File(transactionFile: import('@shared/inter
 
     const transactionId = sdkTransaction.transactionId;
     try {
-      const transaction = await transactionCache.lookup(transactionId!.toString(), serverUrl);
+      const transaction = await transactionCache.fetchBySdkId(transactionId!.toString(), serverUrl);
       importInputs.push({
         id: transaction.id,
         signatureMap: map,

@@ -274,8 +274,7 @@ async function fetchTransactionsOnNotif(options?: { silent?: boolean }) {
   if (isLoggedInOrganization(user.selectedOrganization)) {
     const serverUrl = user.selectedOrganization.serverUrl;
     for (const t of organizationTransactions.value) {
-      // We clear cache with strict==false to keep young data
-      transactionCache.forget(t.transactionRaw.transactionId, serverUrl, false);
+      transactionCache.forget(t.transactionRaw.id, serverUrl);
     }
   }
   // 2) Now fetch group
