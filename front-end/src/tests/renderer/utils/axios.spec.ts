@@ -75,6 +75,22 @@ describe('commonRequestHandler', () => {
       ),
     ).rejects.toThrow('Too many attempts. Please request a new code.');
   });
+
+  test('statusMessages maps a 422 response to a custom message', async () => {
+    const { commonRequestHandler, RequestError } = await import('@renderer/utils/axios');
+
+    const call = commonRequestHandler(
+      async () => {
+        throw createAxiosError(422, { message: 'Email already exists.' });
+      },
+      'Failed to sign up the user',
+      undefined,
+      { 422: 'Email already exists' },
+    );
+
+    await expect(call).rejects.toThrow(RequestError);
+    await expect(call).rejects.toThrow('Email already exists');
+  });
 });
 
 describe('handleAxiosResponseError (426 interceptor handler)', () => {
