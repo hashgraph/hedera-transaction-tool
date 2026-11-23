@@ -12,16 +12,10 @@ const opacityClass = computed(() =>
 </script>
 
 <template>
-  <div class="d-inline-block" style="position: relative; width: 100%">
-    <span
-      class="text-warning text-micro"
-      style="position: absolute; transform: translateY(-80%)"
-      :class="opacityClass"
-    >
-      <i class="bi bi-exclamation-triangle-fill me-1" />
-      {{ props.invalidMessage }}
-    </span>
-  </div>
+  <span class="text-warning text-micro" :class="opacityClass">
+    <i class="bi bi-exclamation-triangle-fill me-1" />
+    {{ props.invalidMessage }}
+  </span>
 </template>
 
 <style scoped></style>
