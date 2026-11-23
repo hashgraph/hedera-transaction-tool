@@ -1,3 +1,4 @@
+import { TransactionId } from '@hiero-ledger/sdk';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { EntityCache } from '@renderer/caches/base/EntityCache';
 import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
@@ -65,5 +66,43 @@ describe('BackendTransactionCache', () => {
     vi.advanceTimersByTime(1_000 + EntityCache.FRESH_DURATION);
     await cache.lookup(7, URL);
     expect(getMock).toHaveBeenCalledTimes(2);
+  });
+
+  describe('fetchBySdkId', () => {
+    test('always fetches and never caches', async () => {
+      getMock.mockResolvedValue(makeTx('WAITING_FOR_EXECUTION'));
+      await cache.fetchBySdkId(SDK_ID, URL);
+      await cache.fetchBySdkId(SDK_ID, URL);
+      expect(getMock).toHaveBeenCalledTimes(2);
+    });
+
+    test('does not populate the numeric cache', async () => {
+      getMock.mockResolvedValue(makeTx('WAITING_FOR_EXECUTION'));
+      await cache.fetchBySdkId(SDK_ID, URL);
+      await cache.lookup(7, URL);
+      expect(getMock).toHaveBeenCalledTimes(2);
+    });
+
+    test('parses the SDK id before calling the backend', async () => {
+      getMock.mockResolvedValue(makeTx('WAITING_FOR_EXECUTION'));
+      await cache.fetchBySdkId(SDK_ID, URL);
+      expect(getMock).toHaveBeenCalledWith(URL, TransactionId.fromString(SDK_ID));
+    });
+
+    test('is not affected by forgetting the numeric entry', async () => {
+      getMock.mockResolvedValue(makeTx('EXECUTED'));
+      cache.forget(7, URL);
+      expect((await cache.fetchBySdkId(SDK_ID, URL)).status).toBe('EXECUTED');
+    });
+  });
+
+  test('forgetTransaction removes the numeric entry', async () => {
+    getMock.mockResolvedValue(makeTx('WAITING_FOR_EXECUTION'));
+    const tx = await cache.lookup(7, URL);
+
+    cache.forgetTransaction(tx, URL);
+
+    getMock.mockResolvedValue(makeTx('EXECUTED'));
+    expect((await cache.lookup(7, URL)).status).toBe('EXECUTED');
   });
 });
