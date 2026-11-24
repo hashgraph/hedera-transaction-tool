@@ -1257,6 +1257,17 @@ export class ReceiverService {
     const transactionId = transaction.id;
     const groupId = transaction.groupItem?.groupId;
 
+    // This reads who is already notified and then creates what is missing. The shared consumer can
+    // hand two events for the same transaction to different replicas, so serialize them on the
+    // transaction row: the second one waits, then sees what the first created and has nothing to
+    // add. Everything below must be read after the lock. It does not block other transactions or
+    // writers that only reference the row.
+    await entityManager.findOne(Transaction, {
+      where: { id: transactionId },
+      select: { id: true },
+      lock: { mode: 'for_no_key_update' },
+    });
+
     const targetIds = new Set(
       await this.getNotificationReceiverIds(
         entityManager,

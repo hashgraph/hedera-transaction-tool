@@ -81,6 +81,7 @@ describe('Signer change notifications (cache change -> notifications)', () => {
   // receiver side mocks
   let em: any;
   let transaction: any;
+  let rowLocks: Map<number, Promise<void>>;
   let existingNotifications: any[];
   let nextNotificationId: number;
   let users: Record<number, any>;
@@ -188,12 +189,38 @@ describe('Signer change notifications (cache change -> notifications)', () => {
     qb.getMany.mockImplementation(async () => [transaction]);
 
     existingNotifications = [];
+    rowLocks = new Map();
     nextNotificationId = 900;
     users = { 2: makeUser(2), 3: makeUser(3), 9: makeUser(9) };
 
     em = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
-      transaction: jest.fn(async (cb: any) => cb(em)),
+      // A row lock taken inside a transaction is held until it ends; a second locker waits
+      transaction: jest.fn(async (cb: any) => {
+        const held: Array<() => void> = [];
+        const txEm = {
+          ...em,
+          findOne: jest.fn(async (_entity: any, opts: any) => {
+            const id = opts.where.id;
+            if (opts.lock) {
+              const previous = rowLocks.get(id) ?? Promise.resolve();
+              let release!: () => void;
+              rowLocks.set(
+                id,
+                previous.then(() => new Promise<void>(resolve => (release = resolve))),
+              );
+              await previous;
+              held.push(release);
+            }
+            return { id };
+          }),
+        };
+        try {
+          return await cb(txEm);
+        } finally {
+          held.forEach(release => release());
+        }
+      }),
       query: jest.fn().mockResolvedValue(undefined),
       update: jest.fn().mockResolvedValue(undefined),
       delete: jest.fn().mockResolvedValue(undefined),
@@ -492,6 +519,23 @@ describe('Signer change notifications (cache change -> notifications)', () => {
       const flagged = { entityId: TX_ID, additionalData: { signersChanged: true } };
 
       await receiver.processTransactionUpdateNotifications(await overTheWire([flagged, flagged]));
+
+      const notifiedUsers = (emitNewNotifications as jest.Mock).mock.calls.flatMap(c => c[1].map((d: any) => d.userId));
+      expect(notifiedUsers).toEqual([3]);
+      expect(emitEmailNotifications).toHaveBeenCalledTimes(1);
+    });
+
+    it('notifies a new signer only once when the same change is handled by two replicas at once', async () => {
+      existingNotifications = [indicator([{ id: 1, userId: 2 }]), signEmail([{ id: 2, userId: 2 }])];
+      requiredSigners(2, 3);
+      const events = await overTheWire(
+        await refreshCachedAccount({ previousKey: oldKey, fetchedKey: newKey }),
+      );
+
+      await Promise.all([
+        receiver.processTransactionUpdateNotifications(events),
+        receiver.processTransactionUpdateNotifications(events),
+      ]);
 
       const notifiedUsers = (emitNewNotifications as jest.Mock).mock.calls.flatMap(c => c[1].map((d: any) => d.userId));
       expect(notifiedUsers).toEqual([3]);

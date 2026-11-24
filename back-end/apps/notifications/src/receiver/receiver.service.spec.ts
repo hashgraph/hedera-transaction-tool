@@ -1777,6 +1777,28 @@ describe('ReceiverService', () => {
         expect(em.delete).not.toHaveBeenCalled();
       });
 
+      it('locks the transaction row before reading who is already notified', async () => {
+        setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2, 3],
+          target: [2, 3],
+          existing: [indicatorOf([{ id: 1, userId: 2 }])],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect(em.findOne).toHaveBeenCalledWith(
+          Transaction,
+          expect.objectContaining({
+            where: { id: 7 },
+            lock: { mode: 'for_no_key_update' },
+          }),
+        );
+        const lockedAt = em.findOne.mock.invocationCallOrder[0];
+        const readAt = em.find.mock.invocationCallOrder[0];
+        expect(lockedAt).toBeLessThan(readAt);
+      });
+
       it('removes the indicator for a signer who is no longer required, without touching others', async () => {
         const { ctx } = setup({
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
