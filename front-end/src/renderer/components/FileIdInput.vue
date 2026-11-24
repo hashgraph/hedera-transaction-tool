@@ -18,10 +18,15 @@ const inputText = ref<string>('');
 /* Computed */
 const newFileId = computed<FileId | null>(() => {
   let result: FileId | null;
-  try {
-    result = FileId.fromString(inputText.value.trim());
-  } catch {
+  const trimmedInputText = inputText.value.trim();
+  if (trimmedInputText === '') {
     result = null;
+  } else {
+    try {
+      result = FileId.fromString(trimmedInputText);
+    } catch {
+      result = null;
+    }
   }
   return result;
 });
@@ -37,7 +42,15 @@ const inputStatus = computed<InputStatus>(() => {
 });
 
 /* Hooks */
-watch(fileId, () => (inputText.value = fileId.value?.toString() ?? ''));
+watch(
+  fileId,
+  () => {
+    if (fileId.value?.toString() !== newFileId.value?.toString()) {
+      inputText.value = fileId.value?.toString() ?? '';
+    }
+  },
+  { immediate: true },
+);
 
 watch(newFileId, () => {
   if (inputStatus.value !== InputStatus.invalid) {

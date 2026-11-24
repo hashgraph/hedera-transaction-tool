@@ -18,10 +18,15 @@ const inputText = ref<string>('');
 /* Computed */
 const newContractId = computed<ContractId | null>(() => {
   let result: ContractId | null;
-  try {
-    result = ContractId.fromString(inputText.value.trim());
-  } catch {
+  const trimmedInputText = inputText.value.trim();
+  if (trimmedInputText === '') {
     result = null;
+  } else {
+    try {
+      result = ContractId.fromString(inputText.value.trim());
+    } catch {
+      result = null;
+    }
   }
   return result;
 });
@@ -37,7 +42,15 @@ const inputStatus = computed<InputStatus>(() => {
 });
 
 /* Hooks */
-watch(contractId, () => (inputText.value = contractId.value?.toString() ?? ''));
+watch(
+  contractId,
+  () => {
+    if (contractId.value?.toString() !== newContractId.value?.toString()) {
+      inputText.value = contractId.value?.toString() ?? '';
+    }
+  },
+  { immediate: true },
+);
 
 watch(newContractId, () => {
   if (inputStatus.value !== InputStatus.invalid) {
