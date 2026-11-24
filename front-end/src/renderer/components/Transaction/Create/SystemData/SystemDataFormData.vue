@@ -52,8 +52,7 @@ watch(
       targetType.value = 'contract';
       contractId.value = props.data.fileOrContractId;
     } else {
-      targetType.value = 'file';
-      fileId.value = null;
+      // Leaves targetType, fileId and contractId unchanged
     }
   },
   { immediate: true },
@@ -71,7 +70,17 @@ const columnClass = 'col-4 col-xxxl-3';
   <div class="row">
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Delete Target</label>
-      <ButtonGroup :items="buttonItems" :activeValue="targetType" color="primary" />
+      <ButtonGroup
+        :items="buttonItems"
+        :activeValue="targetType"
+        button-type="button"
+        color="primary"
+        @change="
+          value => {
+            targetType = value;
+          }
+        "
+      />
     </div>
   </div>
 
