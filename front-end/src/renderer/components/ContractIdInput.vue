@@ -2,10 +2,11 @@
 import { computed, ref, watch } from 'vue';
 import { ContractId } from '@hiero-ledger/sdk';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { type InputReport, InputStatus } from '@renderer/components/InputReport.ts';
+import { InputStatus } from '@renderer/components/InputStatus.ts';
+import { type InputReport } from '@renderer/components/InputReport.ts';
 
 /* Models */
-const contractId = defineModel<ContractId | null>('contractId', { required: true });
+const props = defineProps<{ initialValue: ContractId | null }>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -47,18 +48,12 @@ const inputReport = computed<InputReport<ContractId>>(() => {
 
 /* Hooks */
 watch(
-  contractId,
+  () => props.initialValue,
   () => {
-    if (contractId.value?.toString() !== newContractId.value?.toString()) {
-      inputText.value = contractId.value?.toString() ?? '';
-    }
+    inputText.value = props.initialValue?.toString() ?? '';
   },
   { immediate: true },
 );
-
-watch(newContractId, () => {
-  contractId.value = newContractId.value;
-});
 
 watch(inputReport, () => emit('inputReport', inputReport.value), { immediate: true });
 </script>

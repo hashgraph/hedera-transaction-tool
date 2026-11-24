@@ -75,14 +75,6 @@ watch(
   { immediate: true },
 );
 watch(newFileOrContractId, () => {
-  const className =
-    newFileOrContractId.value instanceof FileId
-      ? 'FileId'
-      : newFileOrContractId.value instanceof ContractId
-        ? 'ContractId'
-        : 'null';
-  console.log('className=' + className);
-  console.log('newFileOrContractId.value=' + (newFileOrContractId.value?.toString() ?? 'null'));
   emit('update:data', { ...props.data, fileOrContractId: newFileOrContractId.value });
 });
 
@@ -111,14 +103,14 @@ const columnClass = 'col-5 col-xxxl-3';
     <template v-if="targetType == 'file'">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">File ID <span class="text-danger">*</span></label>
-        <FileIdInput v-model:fileId="fileId" @inputReport="fileIdReport = $event" />
+        <FileIdInput :initial-value="fileId" @inputReport="fileIdReport = $event" />
         <InputStatusView :status="fileIdReport.status" invalidMessage="Invalid file ID" />
       </div>
     </template>
     <template v-else>
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Contract ID <span class="text-danger">*</span></label>
-        <ContractIdInput v-model:contractId="contractId" @inputReport="contractIdReport = $event" />
+        <ContractIdInput :initial-value="contractId" @inputReport="contractIdReport = $event" />
         <InputStatusView :status="contractIdReport.status" invalidMessage="Invalid Contract ID" />
       </div>
     </template>

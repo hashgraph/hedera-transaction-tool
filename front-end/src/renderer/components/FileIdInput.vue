@@ -6,7 +6,7 @@ import { InputStatus } from '@renderer/components/InputStatus.ts';
 import { type InputReport } from '@renderer/components/InputReport.ts';
 
 /* Models */
-const fileId = defineModel<FileId | null>('fileId', { required: true });
+const props = defineProps<{ initialValue: FileId | null }>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -48,18 +48,12 @@ const inputReport = computed<InputReport<FileId>>(() => {
 
 /* Hooks */
 watch(
-  fileId,
+  () => props.initialValue,
   () => {
-    if (fileId.value?.toString() !== newFileId.value?.toString()) {
-      inputText.value = fileId.value?.toString() ?? '';
-    }
+    inputText.value = props.initialValue?.toString() ?? '';
   },
   { immediate: true },
 );
-
-watch(newFileId, () => {
-  fileId.value = newFileId.value;
-});
 
 watch(inputReport, () => emit('inputReport', inputReport.value), { immediate: true });
 </script>
