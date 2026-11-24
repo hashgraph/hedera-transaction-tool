@@ -77,16 +77,6 @@ export const getTransactionCommonData = (transaction: Transaction): TransactionC
   };
 };
 
-type AssertType = <T extends Transaction>(
-  transaction: Transaction,
-  type: new (...args: any[]) => T,
-) => asserts transaction is T;
-export const assertTransactionType: AssertType = (transaction, type) => {
-  if (!(transaction instanceof type)) {
-    throw new Error('Invalid transaction type.');
-  }
-};
-
 export const getAccountCreateData = (transaction: AccountCreateTransaction): AccountCreateData => {
   return {
     initialBalance: transaction.initialBalance || new Hbar(0),
@@ -480,8 +470,7 @@ export function getSystemData(
   transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
 ): SystemData {
   return {
-    fileId: transaction.fileId?.toString() || '',
-    contractId: transaction.contractId?.toString() || '',
+    fileOrContractId: transaction.contractId ?? transaction.fileId
   };
 }
 

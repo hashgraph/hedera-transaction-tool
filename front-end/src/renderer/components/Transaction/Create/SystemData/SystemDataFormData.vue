@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { computed, ref, watch, type Ref } from 'vue';
+import { ContractId, FileId } from '@hiero-ledger/sdk';
 import type { SystemData } from '@renderer/utils/sdk';
-
-import { formatAccountId, formatContractId } from '@renderer/utils';
-
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import ButtonGroup, { type ButtonGroupItem } from '@renderer/components/ui/ButtonGroup.vue';
+import FileIdInput from '@renderer/components/FileIdInput.vue';
+import ContractIdInput from '@renderer/components/ContractIdInput.vue';
+import InputStatusView from '@renderer/components/InputStatusView.vue';
+import { InputStatus } from '@renderer/components/InputStatus.ts';
 
 /* Props */
 const props = defineProps<{
@@ -11,18 +14,55 @@ const props = defineProps<{
   required?: boolean;
 }>();
 
+/* Emits */
 const emit = defineEmits<{
   (event: 'update:data', data: SystemData): void;
 }>();
 
-/* Handlers */
-function handleFileOnBlur() {
-  emit('update:data', { ...props.data, fileId: formatAccountId(props.data.fileId) });
-}
+/* State */
+const fileId: Ref<FileId | null> = ref(null);
+const fileIdStatus: Ref<InputStatus> = ref(InputStatus.empty);
+const contractId: Ref<ContractId | null> = ref(null);
+const contractIdStatus: Ref<InputStatus> = ref(InputStatus.empty);
+const targetType: Ref<TargetType> = ref('file');
 
-function handleContractOnBlur() {
-  emit('update:data', { ...props.data, contractId: formatContractId(props.data.contractId) });
-}
+/* Computed */
+type TargetType = 'file' | 'contract';
+const buttonItems: ButtonGroupItem<TargetType>[] = [
+  { label: 'File', value: 'file', id: 'tab-delete-target-file' },
+  { label: 'Contract', value: 'contract', id: 'tab-delete-target-contract' },
+];
+
+const newFileOrContractId = computed(() => {
+  return targetType.value === 'file' ? fileId.value : contractId.value;
+});
+
+const newFileOrContractStatus = computed(() => {
+  return targetType.value === 'file' ? fileIdStatus.value : contractIdStatus.value;
+});
+
+/* Hooks */
+watch(
+  () => props.data.fileOrContractId,
+  () => {
+    if (props.data.fileOrContractId instanceof FileId) {
+      targetType.value = 'file';
+      fileId.value = props.data.fileOrContractId;
+    } else if (props.data.fileOrContractId instanceof ContractId) {
+      targetType.value = 'contract';
+      contractId.value = props.data.fileOrContractId;
+    } else {
+      targetType.value = 'file';
+      fileId.value = null;
+    }
+  },
+  { immediate: true },
+);
+watch([newFileOrContractId, newFileOrContractStatus], () => {
+  if (newFileOrContractStatus.value !== InputStatus.invalid) {
+    emit('update:data', { ...props.data, fileOrContractId: newFileOrContractId.value });
+  }
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -30,41 +70,25 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <div class="row">
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label">File ID <span v-if="required" class="text-danger">*</span></label>
-      <AppInput
-        :model-value="data.fileId"
-        @update:model-value="
-          $emit('update:data', {
-            ...data,
-            fileId: $event,
-          })
-        "
-        @blur="handleFileOnBlur"
-        :filled="true"
-        placeholder="Enter File ID"
-        data-testid="input-file-id-for-update"
-      />
+      <label class="form-label">Delete Target</label>
+      <ButtonGroup :items="buttonItems" :activeValue="targetType" color="primary" />
     </div>
   </div>
 
   <div class="row mt-6">
-    <div class="form-group" :class="[columnClass]">
-      <label class="form-label"
-        >Contract ID <span v-if="required" class="text-danger">*</span></label
-      >
-      <AppInput
-        :model-value="data.contractId"
-        @update:model-value="
-          $emit('update:data', {
-            ...data,
-            contractId: $event,
-          })
-        "
-        @blur="handleContractOnBlur"
-        :filled="true"
-        placeholder="Enter Contract ID"
-        data-testid="input-contract-id"
-      />
-    </div>
+    <template v-if="targetType == 'file'">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">File ID <span class="text-danger">*</span></label>
+        <FileIdInput v-model:fileId="fileId" @inputStatus="fileIdStatus = $event" />
+        <InputStatusView :status="fileIdStatus" invalidMessage="Invalid file ID" />
+      </div>
+    </template>
+    <template v-else>
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Contract ID <span class="text-danger">*</span></label>
+        <ContractIdInput v-model:contractId="contractId" @inputStatus="contractIdStatus = $event" />
+        <InputStatusView :status="contractIdStatus" invalidMessage="Invalid Contract ID" />
+      </div>
+    </template>
   </div>
 </template>
