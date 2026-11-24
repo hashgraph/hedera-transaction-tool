@@ -84,7 +84,7 @@ const columnClass = 'col-5 col-xxxl-3';
 <template>
   <div class="row">
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label">Delete Target</label>
+      <label class="form-label">Target</label>
       <ButtonGroup
         :items="buttonItems"
         :activeValue="targetType"
