@@ -132,6 +132,7 @@ const groupActionTaken = ref(false);
 const memoError = ref(false);
 const initialTransaction = ref<T | null>(null);
 const initialDescription = ref('');
+const initialSubmitManually = ref(false);
 const transactionKey = ref<KeyList>(new KeyList([]));
 
 /* Computed */
@@ -168,7 +169,14 @@ const hasDescriptionChanged = computed(() => {
   return description.value !== toRaw(initialDescription.value);
 });
 
-const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescriptionChanged.value);
+const hasSubmitManuallyChanged = computed(
+  () => submitManually.value !== initialSubmitManually.value,
+);
+
+const hasDataChanged = computed(
+  () =>
+    hasTransactionChanged.value || hasDescriptionChanged.value || hasSubmitManuallyChanged.value,
+);
 
 const isNodeCreationPrivRequired = computed(() => {
   return (
@@ -196,6 +204,7 @@ const handleDraftLoaded = async (
   description.value = loadedDescription;
   initialDescription.value = loadedDescription;
   submitManually.value = loadedSubmitManually;
+  initialSubmitManually.value = loadedSubmitManually;
 
   const txData = getTransactionCommonData(transaction);
   payerData.accountId.value = txData.payerId;
@@ -315,6 +324,7 @@ function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
 
 function handleFetchedIsManual(fetchedIsManual: boolean) {
   submitManually.value = fetchedIsManual;
+  initialSubmitManually.value = fetchedIsManual;
 }
 
 function handleInputValidation(e: Event) {

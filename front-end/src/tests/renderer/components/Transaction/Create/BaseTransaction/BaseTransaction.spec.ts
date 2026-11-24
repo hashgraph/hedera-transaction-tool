@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   loadedDraftTransaction: null as TransferTransaction | null,
   loadedDraftDescription: '',
   loadedDraftSubmitManually: undefined as boolean | undefined,
+  fetchedIsManual: undefined as boolean | undefined,
   addDraft: vi.fn(),
   updateDraft: vi.fn(),
   infoControlsDescription: null as string | null,
@@ -138,7 +139,13 @@ vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.v
   },
 }));
 vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue', () => ({
-  default: { name: 'BaseGroupHandler', template: '<div></div>' },
+  default: {
+    name: 'BaseGroupHandler',
+    mounted(this: { $emit: (event: 'fetchedIsManual', value: boolean) => void }) {
+      if (mocks.fetchedIsManual !== undefined) this.$emit('fetchedIsManual', mocks.fetchedIsManual);
+    },
+    template: '<div></div>',
+  },
 }));
 vi.mock(
   '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue',
@@ -300,6 +307,7 @@ describe('BaseTransaction.vue – submit manually in drafts', () => {
     mocks.loadedDraftTransaction = null;
     mocks.loadedDraftDescription = '';
     mocks.loadedDraftSubmitManually = undefined;
+    mocks.fetchedIsManual = undefined;
     mocks.infoControlsDescription = null;
     mocks.infoControlsDelayMs = 0;
     mocks.addDraft.mockReset();
@@ -364,5 +372,46 @@ describe('BaseTransaction.vue – submit manually in drafts', () => {
     expect(mocks.updateDraft.mock.calls[0][0]).toBe('draft-1');
     expect(mocks.updateDraft.mock.calls[0][1]).toMatchObject({ submitManually: true });
     expect(mocks.addDraft).not.toHaveBeenCalled();
+  });
+
+  const dataChanged = (wrapper: ReturnType<typeof mountBase>) =>
+    wrapper.findComponent({ name: 'BaseTransactionModal' }).props('hasDataChanged');
+
+  test('treats a checkbox-only edit as an unsaved change and reverting it as clean', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+    mocks.loadedDraftSubmitManually = false;
+    const wrapper = mountBase();
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(false);
+
+    await headerControls(wrapper).vm.$emit('update:submitManually', true);
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(true);
+
+    await headerControls(wrapper).vm.$emit('update:submitManually', false);
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(false);
+  });
+
+  test('a draft loaded with the checkbox checked is clean until it is changed', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+    mocks.loadedDraftSubmitManually = true;
+    const wrapper = mountBase();
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(false);
+
+    await headerControls(wrapper).vm.$emit('update:submitManually', false);
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(true);
+  });
+
+  test('a group item fetched as manual starts with the checkbox checked and clean', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+    mocks.fetchedIsManual = true;
+    const wrapper = mountBase();
+    await flushPromises();
+
+    expect(headerControls(wrapper).props('submitManually')).toBe(true);
+    expect(dataChanged(wrapper)).toBe(false);
   });
 });

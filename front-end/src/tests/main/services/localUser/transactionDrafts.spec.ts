@@ -52,6 +52,7 @@ describe('Services Local User Public Keys Linked', () => {
         description: 'description',
         details: '',
         type: 'type1',
+        submitManually: false,
       };
 
       prisma.transactionDraft.findFirst.mockResolvedValue(draft);
