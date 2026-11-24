@@ -16,14 +16,15 @@ const emit = defineEmits<{
 const inputText = ref<string>('');
 
 /* Computed */
+const trimmedInputText = computed(() => inputText.value.trim());
+
 const newFileId = computed<FileId | null>(() => {
   let result: FileId | null;
-  const trimmedInputText = inputText.value.trim();
-  if (trimmedInputText === '') {
+  if (trimmedInputText.value === '') {
     result = null;
   } else {
     try {
-      result = FileId.fromString(trimmedInputText);
+      result = FileId.fromString(trimmedInputText.value);
     } catch {
       result = null;
     }
@@ -33,7 +34,7 @@ const newFileId = computed<FileId | null>(() => {
 
 const inputStatus = computed<InputStatus>(() => {
   let result: InputStatus;
-  if (inputText.value.trim() === '') {
+  if (trimmedInputText.value === '') {
     result = InputStatus.empty;
   } else {
     result = newFileId.value !== null ? InputStatus.valid : InputStatus.invalid;
@@ -53,9 +54,7 @@ watch(
 );
 
 watch(newFileId, () => {
-  if (inputStatus.value !== InputStatus.invalid) {
-    fileId.value = newFileId.value;
-  }
+  fileId.value = newFileId.value;
 });
 
 watch(inputStatus, () => emit('inputStatus', inputStatus.value), { immediate: true });

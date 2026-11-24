@@ -16,14 +16,15 @@ const emit = defineEmits<{
 const inputText = ref<string>('');
 
 /* Computed */
+const trimmedInputText = computed(() => inputText.value.trim());
+
 const newContractId = computed<ContractId | null>(() => {
   let result: ContractId | null;
-  const trimmedInputText = inputText.value.trim();
-  if (trimmedInputText === '') {
+  if (trimmedInputText.value === '') {
     result = null;
   } else {
     try {
-      result = ContractId.fromString(inputText.value.trim());
+      result = ContractId.fromString(trimmedInputText.value);
     } catch {
       result = null;
     }
@@ -33,7 +34,7 @@ const newContractId = computed<ContractId | null>(() => {
 
 const inputStatus = computed<InputStatus>(() => {
   let result: InputStatus;
-  if (inputText.value.trim() === '') {
+  if (trimmedInputText.value === '') {
     result = InputStatus.empty;
   } else {
     result = newContractId.value !== null ? InputStatus.valid : InputStatus.invalid;
@@ -53,9 +54,7 @@ watch(
 );
 
 watch(newContractId, () => {
-  if (inputStatus.value !== InputStatus.invalid) {
-    contractId.value = newContractId.value;
-  }
+  contractId.value = newContractId.value;
 });
 
 watch(inputStatus, () => emit('inputStatus', inputStatus.value), { immediate: true });
