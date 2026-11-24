@@ -467,8 +467,7 @@ async function fetchGroupOnNotif(groupId: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && group.value !== null) {
     const serverUrl = user.selectedOrganization.serverUrl;
     for (const item of group.value.groupItems) {
-      // We clear cache with strict==false to keep young data
-      appCache.backendTransaction.forget(item.transactionId, serverUrl, false);
+      appCache.backendTransaction.forget(item.transactionId, serverUrl);
     }
   }
   // 2) Now fetch group

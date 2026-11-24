@@ -1,6 +1,6 @@
 import type { Config } from 'jest';
-import baseConfig from '../../jest.config.ts';
-import { enableDiag } from '../../test-utils/diag-enabled.ts';
+import baseConfig from '../../jest.config.mts';
+import { enableDiag } from '../../test-utils/diag-enabled.cjs';
 
 const includeLibs = process.env.INCLUDE_LIBS !== '0';
 
@@ -14,7 +14,7 @@ const config: Config = {
     '^@app/common(|/.*)$': '<rootDir>/../../libs/common/src/$1',
     '^@entities(|/.*)$': '<rootDir>/../../libs/common/src/database/entities/$1',
   },
-  detectOpenHandles: enableDiag,
+  // Use --detectOpenHandles explicitly when debugging; it disables worker recycling.
   setupFiles: enableDiag ? ['<rootDir>/../../test-utils/jest.setup.diag.ts'] : [],
 };
 

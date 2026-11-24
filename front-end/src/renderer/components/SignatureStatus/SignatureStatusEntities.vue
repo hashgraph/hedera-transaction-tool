@@ -4,14 +4,14 @@ import type { HederaAccount } from '@prisma/client';
 import { computed, onBeforeMount, ref } from 'vue';
 import { Key, KeyList } from '@hiero-ledger/sdk';
 
-import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 
-import { getAll } from '@renderer/services/accountsService';
+import { getAll } from '@renderer/services/accountsService.ts';
 
 import { ableToSign, getAccountIdWithChecksum, isUserLoggedIn } from '@renderer/utils';
 
-import SignatureStatusKeyStructure from '@renderer/components/SignatureStatusKeyStructure.vue';
+import SignatureStatusKeyStructure from '@renderer/components/SignatureStatus/SignatureStatusKeyStructure.vue';
 
 /* Props */
 const props = defineProps<{

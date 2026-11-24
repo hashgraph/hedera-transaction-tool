@@ -1,5 +1,4 @@
-import { CanActivate, HttpArgumentsHost } from '@nestjs/common/interfaces';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -29,7 +28,7 @@ describe('JwtBlacklistGuard', () => {
     const mockRequest = {};
     jest.spyOn(context, 'switchToHttp').mockReturnValue({
       getRequest: () => mockRequest,
-    } as unknown as HttpArgumentsHost);
+    } as unknown as ReturnType<ExecutionContext['switchToHttp']>);
   });
 
   it('should allow access if IGNORE_CONTROLLER_GUARD is true', async () => {

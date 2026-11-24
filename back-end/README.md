@@ -87,6 +87,8 @@ pnpm -F notifications test:cov     # resolves to @back-end/notifications
 
 Or by `cd back-end` and running the script as before — both work.
 
+Backend test scripts enable Node's `--experimental-vm-modules` flag for the NestJS ESM integrations and preserve existing `NODE_OPTIONS`. Jest configurations use `.mts` to declare their ESM format explicitly. The backend TypeScript setting `rewriteRelativeImportExtensions` permits their source-extension imports without disabling build output. When running Jest directly outside these scripts, supply the Node flag yourself.
+
 ## 3. Environment Configuration
 
 Create `.env` files from the provided `example.env` templates in each of the following directories:

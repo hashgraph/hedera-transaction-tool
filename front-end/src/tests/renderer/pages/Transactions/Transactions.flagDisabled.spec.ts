@@ -81,6 +81,8 @@ vi.mock('@renderer/caches/backend/BackendTransactionCache.ts', () => {
     }));
 
     lookup = vi.fn();
+    fetchBySdkId = vi.fn();
+    forget = vi.fn();
   }
 
   return {

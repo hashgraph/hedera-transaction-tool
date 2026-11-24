@@ -189,7 +189,7 @@ const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
     for (const candidate of newValue) {
       if (transactionMap.value.get(candidate.transactionId) === undefined) {
         try {
-          const t = await transactionCache.lookup(candidate.transactionId, serverUrl);
+          const t = await transactionCache.fetchBySdkId(candidate.transactionId, serverUrl);
           transactionMap.value.set(candidate.transactionId, t);
         } catch (error) {
           logger.error('Failed to fetch transaction by id', { error });

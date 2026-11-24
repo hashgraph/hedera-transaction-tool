@@ -5,7 +5,7 @@ import { mockDeep } from 'jest-mock-extended';
 import {
   MirrorNodeCircuitBreaker,
   CircuitState,
-} from './mirror-node-circuit-breaker.service';
+} from '@app/common';
 
 describe('MirrorNodeCircuitBreaker', () => {
   let service: MirrorNodeCircuitBreaker;
@@ -16,7 +16,7 @@ describe('MirrorNodeCircuitBreaker', () => {
     jest.restoreAllMocks();
 
     // Return the default value (second argument) for config lookups
-    configService.get.mockImplementation((_key: string, defaultValue?: any) => defaultValue);
+    jest.mocked(configService.get).mockImplementation((_key: string, defaultValue?: any) => defaultValue);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

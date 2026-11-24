@@ -128,7 +128,7 @@ describe('UsersService', () => {
         },
       ];
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
       const result = await service.getUsers(adminUser, false);
@@ -144,7 +144,7 @@ describe('UsersService', () => {
     it('should return empty clients array when no clients exist', async () => {
       const usersWithClients = [{ ...user, clients: [] }];
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
 
       const result = await service.getUsers(adminUser, false);
 
@@ -165,7 +165,7 @@ describe('UsersService', () => {
     it('should handle users with undefined clients for admin users', async () => {
       const usersWithUndefinedClients = [{ ...user, clients: undefined }];
       userRepository.find.mockResolvedValue(usersWithUndefinedClients as unknown as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
 
       const result = await service.getUsers(adminUser, false);
 
@@ -185,7 +185,7 @@ describe('UsersService', () => {
         },
       ];
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest
         .mocked(isUpdateAvailable)
         .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
@@ -209,7 +209,7 @@ describe('UsersService', () => {
         },
       ];
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
       const result = await service.getUsers(adminUser, false);
@@ -228,7 +228,7 @@ describe('UsersService', () => {
         },
       ];
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
-      configService.get.mockReturnValue(undefined);
+      jest.mocked(configService.get).mockReturnValue(undefined);
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
       const result = await service.getUsers(adminUser, false);
@@ -257,7 +257,7 @@ describe('UsersService', () => {
         },
       ];
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest
         .mocked(isUpdateAvailable)
         .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
@@ -275,7 +275,7 @@ describe('UsersService', () => {
         { ...user, id: 2, clients: [] },
       ];
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       const statusForOne = {
         hasKey: true,
         keyId: 'abc',
@@ -319,7 +319,7 @@ describe('UsersService', () => {
 
     it('should not attach apiKeyStatus when the admin requester authenticated via API key', async () => {
       userRepository.find.mockResolvedValue([{ ...user, clients: [] }] as User[]);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
 
       const result = await service.getUsers(adminUser, true);
 
@@ -342,7 +342,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
       const result = await service.getUserWithClients(1, adminUser);
@@ -363,7 +363,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
       const result = await service.getUserWithClients(1, adminUser);
@@ -381,7 +381,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
       const result = await service.getUserWithClients(1, selfUser);
@@ -399,7 +399,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
       const result = await service.getUserWithClients(1, otherUser);
@@ -416,7 +416,7 @@ describe('UsersService', () => {
     it('should handle empty clients array for admin user', async () => {
       const userWithClients = { ...user, id: 1, clients: [] };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
 
       const result = await service.getUserWithClients(1, adminUser);
 
@@ -434,7 +434,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
       const result = await service.getUserWithClients(1, selfUser);
@@ -452,7 +452,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
       const result = await service.getUserWithClients(1, otherUser);
@@ -470,7 +470,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue(undefined);
+      jest.mocked(configService.get).mockReturnValue(undefined);
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
       const result = await service.getUserWithClients(1, adminUser);
@@ -483,7 +483,7 @@ describe('UsersService', () => {
     it('should attach apiKeyStatus when requester is admin, even for their own record', async () => {
       const userWithClients = { ...user, id: 1, clients: [] };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       const status = {
         hasKey: true,
         keyId: 'abc',
@@ -504,7 +504,7 @@ describe('UsersService', () => {
     it('should not attach apiKeyStatus when requester is the user themselves (non-admin)', async () => {
       const userWithClients = { ...user, id: 1, clients: [] };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
 
       const result = await service.getUserWithClients(1, selfUser);
 
@@ -515,7 +515,7 @@ describe('UsersService', () => {
     it('should not attach apiKeyStatus when a non-admin requests another user', async () => {
       const userWithClients = { ...user, id: 1, clients: [] };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
 
       const result = await service.getUserWithClients(1, otherUser);
 
@@ -533,7 +533,7 @@ describe('UsersService', () => {
         ],
       };
       userRepository.findOne.mockResolvedValue(userWithClients as User);
-      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(configService.get).mockReturnValue('1.1.0');
       jest
         .mocked(isUpdateAvailable)
         .mockImplementation((clientVersion: string) => clientVersion === '0.9.0');
@@ -852,7 +852,7 @@ describe('UsersService', () => {
 
     beforeEach(() => {
       // Setup config service mock for version check
-      configService.get.mockImplementation((key: string) => {
+      jest.mocked(configService.get).mockImplementation((key: string) => {
         switch (key) {
           case 'LATEST_SUPPORTED_FRONTEND_VERSION':
             return latestVersion;
@@ -920,7 +920,7 @@ describe('UsersService', () => {
     it('should handle missing config values gracefully', () => {
       // Override config to return undefined for all version-related keys
       // Note: In production, config is required, so this scenario won't occur
-      configService.get.mockReturnValue(undefined);
+      jest.mocked(configService.get).mockReturnValue(undefined);
 
       const mockResult = {
         latestSupportedVersion: '',

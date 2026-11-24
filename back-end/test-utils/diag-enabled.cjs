@@ -7,8 +7,8 @@
  * the integration specs that use it stay quiet. CI runners (GitHub Actions
  * sets `CI=true`) keep the full instrumentation. Set `JEST_DIAG=1` to opt
  * in locally; `JEST_DIAG=0` explicitly disables (matches the `INCLUDE_LIBS`
- * convention in `apps/notifications/jest.config.ts`).
+ * convention in `apps/notifications/jest.config.mts`).
  */
-export const enableDiag: boolean =
+exports.enableDiag =
   process.env.CI === 'true' ||
   (process.env.JEST_DIAG !== undefined && process.env.JEST_DIAG !== '0');

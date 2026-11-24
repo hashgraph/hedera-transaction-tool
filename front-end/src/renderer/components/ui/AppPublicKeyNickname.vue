@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue';
+import { computed, ref, watch, watchEffect } from 'vue';
 import { PublicKey } from '@hiero-ledger/sdk';
 import { extractIdentifier, formatPublicKey } from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import useCreateTooltip from '@renderer/composables/useCreateTooltip';
+import { SearchIndex } from '@renderer/components/SignatureStatus/SearchIndex.ts';
+import Highlighter from '@renderer/components/ui/Highlighter.vue';
 
 const KEY_PREFIX_LENGTH = 6;
 const KEY_SUFFIX_LENGTH = 6;
@@ -18,10 +20,12 @@ const props = defineProps<{
 
 /* Injected */
 const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
+const searchIndex = SearchIndex.inject();
 
 /* State */
 const formattedPublicKey = ref('');
 const keyRef = ref<HTMLElement | null>(null);
+const containerRef = ref<HTMLElement | null>(null);
 
 /* Composables */
 useCreateTooltip(keyRef);
@@ -45,28 +49,58 @@ const displayKey = computed(() => {
     : pk;
 });
 
+const shouldHighlight = computed(() => {
+  return (
+    containerRef.value !== null && searchIndex.matches.value.indexOf(containerRef.value) !== -1
+  );
+});
+
+/* Hooks */
 watchEffect(async () => {
   if (value.value) {
     formattedPublicKey.value = await formatPublicKey(value.value, publicKeyOwnerCache);
   }
 });
+
+watch(
+  containerRef,
+  (newValue, oldValue) => {
+    if (oldValue) {
+      searchIndex.removeCandidate(value.value, oldValue);
+    }
+    if (newValue !== null) {
+      searchIndex.pushCandidate(value.value, newValue);
+    }
+  },
+  { immediate: true },
+);
+watch(value, (newValue, oldValue) => {
+  if (containerRef.value !== null) {
+    if (oldValue) {
+      searchIndex.removeCandidate(oldValue, containerRef.value);
+    }
+    searchIndex.pushCandidate(newValue, containerRef.value);
+  }
+});
 </script>
 <template>
-  <span v-if="formattedPublicKey">
-    <span v-if="signed" class="text-success">{{ formattedPublicKey }}</span>
-    <span v-else-if="!signed && identifier">
-      <span class="text-pink me-2">{{ identifier?.identifier }}</span>
-      <span
-        ref="keyRef"
-        :data-bs-toggle="isKeyTruncated ? 'tooltip' : ''"
-        data-bs-custom-class="no-wrap-tooltip"
-        data-bs-trigger="hover"
-        data-bs-placement="top"
-        :data-bs-title="isKeyTruncated ? identifier?.pk : ''"
-        >{{ `(${displayKey})` }}</span
-      >
-    </span>
-    <span v-else>{{ formattedPublicKey }}</span>
-    <span v-if="props.external" class="badge bg-info text-break ms-2">External</span>
+  <span ref="containerRef" v-if="formattedPublicKey" class="font-monospace">
+    <Highlighter :visible="shouldHighlight">
+      <span v-if="signed" class="text-success">{{ formattedPublicKey }}</span>
+      <span v-else-if="!signed && identifier">
+        <span class="text-pink me-2">{{ identifier?.identifier }}</span>
+        <span
+          ref="keyRef"
+          :data-bs-toggle="isKeyTruncated ? 'tooltip' : ''"
+          data-bs-custom-class="no-wrap-tooltip"
+          data-bs-trigger="hover"
+          data-bs-placement="top"
+          :data-bs-title="isKeyTruncated ? identifier?.pk : ''"
+          >{{ `(${displayKey})` }}</span
+        >
+      </span>
+      <span v-else>{{ formattedPublicKey }}</span>
+      <span v-if="props.external" class="badge bg-info text-break ms-2">External</span>
+    </Highlighter>
   </span>
 </template>
