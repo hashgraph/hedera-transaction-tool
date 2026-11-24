@@ -9,7 +9,7 @@ vi.mock('@renderer/utils/sdk/transactions', () => ({
   getTransactionType: vi.fn(() => 'Transfer'),
 }));
 
-import { updateGroup } from '@renderer/services/transactionGroupsService';
+import { addGroupWithDrafts, updateGroup } from '@renderer/services/transactionGroupsService';
 
 function storeItem(overrides: Partial<StoreGroupItem> = {}): StoreGroupItem {
   return {
@@ -64,11 +64,62 @@ describe('transactionGroupsService.updateGroup', () => {
     });
   });
 
+  test('persists each item\'s isManual as the draft submitManually flag', async () => {
+    await updateGroup('g-1', 'user-1', { description: 'd' }, [
+      storeItem({ isManual: true }),
+      storeItem({ isManual: false }),
+      storeItem(),
+    ]);
+
+    const drafts = api.transactionGroups.updateGroupWithItems.mock.calls[0][2];
+    expect(drafts.map((d: any) => d.submitManually)).toEqual([true, false, false]);
+  });
+
   test('wraps a failure from the main process instead of leaving it to surface raw', async () => {
     api.transactionGroups.updateGroupWithItems.mockRejectedValue(new Error('boom'));
 
     await expect(updateGroup('g-1', 'user-1', { description: 'd' }, [storeItem()])).rejects.toThrow(
       'Failed to update transaction group with id: g-1',
     );
+  });
+});
+
+describe('transactionGroupsService.addGroupWithDrafts', () => {
+  let api: any;
+
+  beforeEach(() => {
+    api = {
+      transactionGroups: {
+        addGroup: vi.fn().mockResolvedValue({ id: 'g-1' }),
+        addGroupItem: vi.fn(),
+      },
+      transactionDrafts: {
+        addDraft: vi.fn().mockResolvedValue({ id: 'draft-1' }),
+      },
+    };
+    (window as any).electronAPI = { local: api };
+  });
+
+  test('persists each item\'s isManual as the draft submitManually flag', async () => {
+    const group = await addGroupWithDrafts(
+      'user-1',
+      'desc',
+      false,
+      [storeItem({ isManual: true }), storeItem({ isManual: false }), storeItem()],
+      new Date(1000),
+    );
+
+    expect(group).toEqual({ id: 'g-1' });
+    const created = api.transactionDrafts.addDraft.mock.calls.map((c: any) => c[0]);
+    expect(created.map((d: any) => d.submitManually)).toEqual([true, false, false]);
+    expect(api.transactionGroups.addGroupItem).toHaveBeenCalledTimes(3);
+  });
+
+  test('wraps a failure while saving the drafts', async () => {
+    api.transactionDrafts.addDraft.mockRejectedValue(new Error('boom'));
+
+    await expect(
+      addGroupWithDrafts('user-1', 'desc', false, [storeItem()], new Date(1000)),
+    ).rejects.toThrow('Failed to add transaction draft');
   });
 });

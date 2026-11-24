@@ -106,6 +106,7 @@ model TransactionDraft {
   description      String
   isTemplate       Boolean? @default(false)
   details          String?
+  submitManually   Boolean  @default(false)
   user             User     @relation(fields: [user_id], references: [id])
 
   GroupItem GroupItem[]

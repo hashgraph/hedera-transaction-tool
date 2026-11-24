@@ -60,7 +60,7 @@ describe('BaseDraftLoad', () => {
     const setContentsSpy = vi.spyOn(transaction, 'setContents');
 
     mocks.routeQuery = { draftId: 'draft-1' };
-    mocks.getDraft.mockResolvedValue({ transactionBytes: '0x1234', description: 'draft description' });
+    mocks.getDraft.mockResolvedValue({ transactionBytes: '0x1234', description: 'draft description', submitManually: true });
     mocks.getTransactionFromBytes.mockReturnValue(transaction);
 
     const wrapper = mount(BaseDraftLoad, {
@@ -74,6 +74,31 @@ describe('BaseDraftLoad', () => {
     expect(mocks.getTransactionFromBytes).toHaveBeenCalledWith('0x1234');
     expect(setContentsSpy).not.toHaveBeenCalled();
     expect(Array.from(transaction.contents ?? [])).toEqual([1, 2, 3]);
-    expect(wrapper.emitted('draft-loaded')?.[0]).toEqual([transaction, 'draft description']);
+    expect(wrapper.emitted('draft-loaded')?.[0]).toEqual([transaction, 'draft description', true]);
+  });
+
+  test('defaults submitManually to false for drafts saved before the column existed', async () => {
+    const transaction = makeNonEmptyFileTransaction(FileCreateTransaction);
+    mocks.routeQuery = { draftId: 'draft-1' };
+    mocks.getDraft.mockResolvedValue({ transactionBytes: '0x1234', description: 'old draft' });
+    mocks.getTransactionFromBytes.mockReturnValue(transaction);
+
+    const wrapper = mount(BaseDraftLoad, { props: { transactionCtor: FileCreateTransaction } });
+    await flushPromises();
+
+    expect(wrapper.emitted('draft-loaded')?.[0]).toEqual([transaction, 'old draft', false]);
+  });
+
+  test('emits submitManually false when loading an item from a group', async () => {
+    const transaction = makeNonEmptyFileTransaction(FileCreateTransaction);
+    mocks.routeQuery = { group: 'true', groupIndex: '0' };
+    mocks.groupItems = [{ transactionBytes: new Uint8Array([1]), description: 'item' } as any];
+    mocks.getTransactionFromBytes.mockReturnValue(transaction);
+
+    const wrapper = mount(BaseDraftLoad, { props: { transactionCtor: FileCreateTransaction } });
+    await flushPromises();
+
+    expect(mocks.getDraft).not.toHaveBeenCalled();
+    expect(wrapper.emitted('draft-loaded')?.[0]).toEqual([transaction, 'item', false]);
   });
 });

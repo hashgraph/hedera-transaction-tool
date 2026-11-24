@@ -187,10 +187,15 @@ const payerInfo = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: T, loadedDescription: string): Promise<void> => {
+const handleDraftLoaded = async (
+  transaction: T,
+  loadedDescription: string,
+  loadedSubmitManually = false,
+): Promise<void> => {
   initialTransaction.value = transaction;
   description.value = loadedDescription;
   initialDescription.value = loadedDescription;
+  submitManually.value = loadedSubmitManually;
 
   const txData = getTransactionCommonData(transaction);
   payerData.accountId.value = txData.payerId;
@@ -331,13 +336,20 @@ const saveDraft = async (): Promise<void> => {
     await updateDraft(draftId, {
       transactionBytes: transactionBytes.toString(),
       description: description.value,
+      submitManually: submitManually.value,
     });
     isDraftSaved.value = true;
     toastManager.success('Draft updated');
   } else {
     // Draft does not exist yet => this is an add
     assertUserLoggedIn(user.personal);
-    await addDraft(user.personal.id, transactionBytes, description.value);
+    await addDraft(
+      user.personal.id,
+      transactionBytes,
+      description.value,
+      undefined,
+      submitManually.value,
+    );
     isDraftSaved.value = true;
     toastManager.success('Draft saved');
   }
@@ -492,6 +504,7 @@ defineExpose({
       @editGroupItem="handleGroupAction('edit', $event)"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
       :description="description || ''"
+      :submit-manually="submitManually"
       :has-data-changed="hasDataChanged"
     />
   </div>

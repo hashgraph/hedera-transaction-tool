@@ -31,6 +31,7 @@ const props = defineProps<{
   skip?: boolean;
   getTransaction: () => Transaction;
   description: string;
+  submitManually?: boolean;
   hasDataChanged: boolean;
 }>();
 
@@ -100,6 +101,7 @@ const handleSingleTransaction = async () => {
         await updateDraft(loadedDraft.id, {
           transactionBytes: transactionBytes.toString(),
           description: props.description,
+          submitManually: props.submitManually,
         });
         toastManager.success('Draft updated');
         await router.push(redirectPath.value);
@@ -113,7 +115,13 @@ const handleSingleTransaction = async () => {
 };
 
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
-  await addDraft(userId, transactionBytes, props.description);
+  await addDraft(
+    userId,
+    transactionBytes,
+    props.description,
+    undefined,
+    props.submitManually,
+  );
   toastManager.success('Draft saved');
   await router.push(redirectPath.value);
 }

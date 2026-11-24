@@ -20,7 +20,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'draft-loaded', transaction: T, description: string): void;
+  (event: 'draft-loaded', transaction: T, description: string, submitManually: boolean): void;
 }>();
 
 /* Stores */
@@ -41,11 +41,13 @@ const handleLoadFromDraft = async () => {
 
   let transactionBytes: string | null = null;
   let description = '';
+  let submitManually = false;
 
   if (!group) {
     const draft = await getDraft(draftId);
     transactionBytes = draft.transactionBytes;
     description = draft.description || '';
+    submitManually = draft.submitManually ?? false;
   } else if (groupIndex) {
     const groupItem = transactionGroup.groupItems[Number(groupIndex)];
     transactionBytes = groupItem.transactionBytes.toString();
@@ -55,7 +57,7 @@ const handleLoadFromDraft = async () => {
   if (transactionBytes) {
     const transaction = getTransactionFromBytes(transactionBytes);
     if (transaction instanceof props.transactionCtor) {
-      emit('draft-loaded', transaction, description);
+      emit('draft-loaded', transaction, description, submitManually);
     } else {
       throw Error('Unexpected type of transaction');
     }
