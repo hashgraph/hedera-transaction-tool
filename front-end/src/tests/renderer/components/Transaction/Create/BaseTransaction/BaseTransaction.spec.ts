@@ -10,6 +10,7 @@ import {
   TransactionId,
   TransferTransaction,
 } from '@hiero-ledger/sdk';
+import { applyNanoOffset } from '@renderer/utils/sdk/timestamp';
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction/BaseTransaction.vue';
 
 // Module-level route query the mocked `useRoute` reads. Each test sets this
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   infoControlsDescription: null as string | null,
   infoControlsDelayMs: 0,
   routeDown: vi.fn(),
+  processed: null as { bytesFactory?: (nanoOffset: number) => Uint8Array } | null,
 }));
 
 vi.mock('vue-router', () => ({
@@ -44,14 +46,14 @@ vi.mock('@renderer/utils/ToastManager', () => ({
 
 vi.mock('@renderer/composables/useAccountId', () => ({
   default: () => ({
-    accountId: ref(''),
+    accountId: ref('0.0.2'),
     isValid: ref(false),
     key: ref(undefined),
   }),
 }));
 
 vi.mock('@renderer/composables/useLoader', () => ({
-  default: () => vi.fn(),
+  default: () => vi.fn(async (fn: () => Promise<unknown>) => fn()),
 }));
 
 vi.mock('@renderer/caches/AppCache.ts', () => ({
@@ -76,11 +78,7 @@ vi.mock('@renderer/components/Transaction/TransactionHeaderControls.vue', () => 
 vi.mock('@renderer/components/Transaction/TransactionInfoControls.vue', () => ({
   default: {
     name: 'TransactionInfoControls',
-    mounted(
-      this: {
-        $emit: (event: 'update:description', description: string) => void;
-      },
-    ) {
+    mounted(this: { $emit: (event: 'update:description', description: string) => void }) {
       if (mocks.infoControlsDescription !== null) {
         setTimeout(() => {
           this.$emit('update:description', mocks.infoControlsDescription as string);
@@ -100,15 +98,9 @@ vi.mock('@renderer/components/Transaction/TransactionIdControls.vue', () => ({
 vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue', () => ({
   default: {
     name: 'BaseDraftLoad',
-    mounted(
-      this: {
-        $emit: (
-          event: 'draft-loaded',
-          tx: TransferTransaction,
-          description: string,
-        ) => void;
-      },
-    ) {
+    mounted(this: {
+      $emit: (event: 'draft-loaded', tx: TransferTransaction, description: string) => void;
+    }) {
       if (mocks.loadedDraftTransaction) {
         this.$emit('draft-loaded', mocks.loadedDraftTransaction, mocks.loadedDraftDescription);
       }
@@ -137,18 +129,33 @@ vi.mock('@renderer/components/Transaction/TransactionProcessor', () => ({
   default: {
     name: 'TransactionProcessor',
     props: ['onExecuted', 'onSubmitted', 'onGroupSubmitted', 'onLocalStored'],
+    methods: {
+      process(req: { bytesFactory?: (nanoOffset: number) => Uint8Array }) {
+        mocks.processed = req;
+      },
+    },
     template: '<div></div>',
   },
   CustomRequest: class {},
-  TransactionRequest: class {},
+  TransactionRequest: { fromData: (opts: object) => opts },
 }));
 
-function createTransferTransaction(validStart: Date, memo = '', payer = '0.0.2') {
+// Mirrors the real builders: the id is set once here, which locks it, and the
+// nano offset is applied before that (a second setTransactionId would throw).
+function createTransferTransaction(
+  validStart: Date,
+  memo = '',
+  payer = '0.0.2',
+  validStartNanoOffset = 0,
+) {
   return new TransferTransaction()
     .setTransactionMemo(memo)
     .setMaxTransactionFee(new Hbar(2))
     .setTransactionId(
-      TransactionId.withValidStart(AccountId.fromString(payer), Timestamp.fromDate(validStart)),
+      TransactionId.withValidStart(
+        AccountId.fromString(payer),
+        applyNanoOffset(Timestamp.fromDate(validStart), validStartNanoOffset),
+      ),
     );
 }
 
@@ -156,8 +163,13 @@ function mountBase() {
   return mount(BaseTransaction, {
     props: {
       transactionCtor: TransferTransaction,
-      createTransaction: ({ validStart, transactionMemo, payerId }) =>
-        createTransferTransaction(validStart, transactionMemo, payerId || '0.0.2'),
+      createTransaction: ({ validStart, transactionMemo, payerId, validStartNanoOffset }) =>
+        createTransferTransaction(
+          validStart,
+          transactionMemo,
+          payerId || '0.0.2',
+          validStartNanoOffset,
+        ),
       getAllData: (tx: Transaction) => {
         return {
           validStart: tx.transactionId?.validStart,
@@ -285,13 +297,16 @@ describe('BaseTransaction.vue – routing after submit carries the real transact
     mocks.infoControlsDescription = null;
     mocks.infoControlsDelayMs = 0;
     mocks.routeDown.mockClear();
+    mocks.processed = null;
   });
 
   test('handleSubmit passes the SDK transactionId alongside the DB id', async () => {
     const wrapper = mountBase();
     await flushPromises();
 
-    const onSubmitted = wrapper.findComponent({ name: 'TransactionProcessor' }).props('onSubmitted');
+    const onSubmitted = wrapper
+      .findComponent({ name: 'TransactionProcessor' })
+      .props('onSubmitted');
     await onSubmitted(93, 'deadbeef');
 
     expect(mocks.routeDown).toHaveBeenCalledTimes(1);
@@ -299,6 +314,52 @@ describe('BaseTransaction.vue – routing after submit carries the real transact
     expect(targetNodeId.transactionId).toBe(93);
     expect(targetNodeId.sdkTransactionId).toMatch(/^0\.0\.2@\d+\.\d+$/);
     expect(collection).toEqual([targetNodeId]);
+  });
+
+  test('handleSubmit and handleLocalStored use the id of the last bytes built by bytesFactory (duplicate retry)', async () => {
+    const wrapper = mountBase();
+    await flushPromises();
+    await (wrapper.vm as unknown as { submit: () => Promise<void> }).submit();
+
+    const bytesFactory = mocks.processed!.bytesFactory!;
+    const initial = Transaction.fromBytes(bytesFactory(0)).transactionId!;
+    const retried = Transaction.fromBytes(bytesFactory(7)).transactionId!;
+    const retriedId = retried.toString();
+    expect(retriedId).not.toBe(initial.toString());
+    // Retries are exact nano offsets from the first attempt's validStart
+    expect(retried.accountId?.toString()).toBe(initial.accountId?.toString());
+    expect(retried.validStart!.seconds.toString()).toBe(initial.validStart!.seconds.toString());
+    expect(retried.validStart!.nanos.toNumber() - initial.validStart!.nanos.toNumber()).toBe(7);
+
+    const processor = wrapper.findComponent({ name: 'TransactionProcessor' });
+    await processor.props('onSubmitted')(93, 'deadbeef');
+    await processor.props('onLocalStored')('local-uuid-1');
+
+    expect(mocks.routeDown.mock.calls[0][0].sdkTransactionId).toBe(retriedId);
+    expect(mocks.routeDown.mock.calls[1][0].sdkTransactionId).toBe(retriedId);
+  });
+
+  test('routes with the id of the submitted bytes even if the form validStart ticks afterwards', async () => {
+    const wrapper = mountBase();
+    await flushPromises();
+    await (wrapper.vm as unknown as { submit: () => Promise<void> }).submit();
+
+    const submittedId = Transaction.fromBytes(mocks.processed!.bytesFactory!(0)).transactionId!;
+
+    // The running-clock picker rewrites validStart every second, which gives
+    // the `transaction` computed a new id while signing/submitting is in flight.
+    const laterValidStart = new Date(submittedId.validStart!.toDate().getTime() + 5000);
+    wrapper
+      .findComponent({ name: 'TransactionIdControls' })
+      .vm.$emit('update:validStart', laterValidStart);
+    await flushPromises();
+
+    const processor = wrapper.findComponent({ name: 'TransactionProcessor' });
+    await processor.props('onSubmitted')(93, 'deadbeef');
+    await processor.props('onLocalStored')('local-uuid-1');
+
+    expect(mocks.routeDown.mock.calls[0][0].sdkTransactionId).toBe(submittedId.toString());
+    expect(mocks.routeDown.mock.calls[1][0].sdkTransactionId).toBe(submittedId.toString());
   });
 
   test('handleLocalStored passes the SDK transactionId alongside the local id', async () => {

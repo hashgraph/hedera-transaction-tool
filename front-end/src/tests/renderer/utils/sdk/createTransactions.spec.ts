@@ -35,7 +35,11 @@ import {
 import Long from 'long';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
-import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
+import type {
+  IAccountInfoParsed,
+  INodeInfoParsed,
+  IRegisteredNodeInfoParsed,
+} from '@shared/interfaces';
 
 import {
   createAccountCreateTransaction,
@@ -198,6 +202,20 @@ describe('createTransactionId', () => {
   });
 });
 
+describe('createTransactionId nanoOffset', () => {
+  test('adds the offset to the validStart nanos, rolling into seconds', () => {
+    const start = new Timestamp(1_900_000_000, 999_999_999);
+    const id = createTransactionId('0.0.2', start, 2);
+    expect(id.validStart?.seconds.toNumber()).toBe(1_900_000_001);
+    expect(id.validStart?.nanos.toNumber()).toBe(1);
+  });
+
+  test('defaults to no offset', () => {
+    const start = new Timestamp(1_900_000_000, 5);
+    expect(createTransactionId('0.0.2', start).validStart?.toString()).toBe(start.toString());
+  });
+});
+
 describe('common transaction data (applied by every creator)', () => {
   const build = (overrides: Partial<TransactionCommonData> = {}) =>
     createAccountDeleteTransaction({
@@ -225,6 +243,34 @@ describe('common transaction data (applied by every creator)', () => {
 
   test('does not set a transaction id for an invalid payer', () => {
     expect(build({ payerId: 'nope' }).transactionId).toBeNull();
+  });
+
+  test('validStartNanoOffset shifts the transaction id validStart by that many nanos', () => {
+    const validStart = new Date(Date.now() + 60_000);
+    const base = build({ validStart }).transactionId!.validStart!;
+    const shifted = build({ validStart, validStartNanoOffset: 42 }).transactionId!.validStart!;
+    expect(shifted.seconds.toString()).toBe(base.seconds.toString());
+    expect(shifted.nanos.toNumber() - base.nanos.toNumber()).toBe(42);
+  });
+
+  test('validStartNanoOffset rolls over into seconds', () => {
+    const validStart = new Date(Date.now() + 60_000);
+    const base = build({ validStart }).transactionId!.validStart!;
+    const shifted = build({ validStart, validStartNanoOffset: 1_000_000_000 }).transactionId!
+      .validStart!;
+    expect(shifted.seconds.toNumber()).toBe(base.seconds.toNumber() + 1);
+    expect(shifted.nanos.toNumber()).toBe(base.nanos.toNumber());
+  });
+
+  test('a zero or absent validStartNanoOffset leaves the id unchanged', () => {
+    const validStart = new Date(Date.now() + 60_000);
+    const base = build({ validStart }).transactionId!.toString();
+    expect(build({ validStart, validStartNanoOffset: 0 }).transactionId!.toString()).toBe(base);
+  });
+
+  test('keeps the payer when offsetting, and sets no id for an invalid payer', () => {
+    expect(build({ validStartNanoOffset: 5 }).transactionId?.accountId?.toString()).toBe('0.0.2');
+    expect(build({ payerId: 'nope', validStartNanoOffset: 5 }).transactionId).toBeNull();
   });
 });
 
@@ -1214,7 +1260,6 @@ describe('Registered node creators', () => {
   });
 
   describe('createRegisteredNodeUpdateTransaction', () => {
-
     const registeredNodeUpdateData = {
       registeredNodeId: '12',
       adminKey,
@@ -1259,7 +1304,6 @@ describe('Registered node creators', () => {
     });
 
     describe('with description changed', () => {
-
       describe('with current: null', () => {
         const currentInfo = { ...registeredNodeInfo, description: null };
 
@@ -1312,7 +1356,6 @@ describe('Registered node creators', () => {
           const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
           expect(tx.description).toBe('cde');
         });
-
       });
     });
 
