@@ -33,7 +33,7 @@ const handleSystemDataUpdate = (data: SystemData) => {
   <SystemDataFormData :data="data" @update:data="handleSystemDataUpdate" />
 
   <div class="row mt-6">
-    <div class="form-group col-4 col-xxxl-3">
+    <div class="form-group col-5 col-xxxl-3">
       <label class="form-label"
         >Expiration <span class="text-muted text-italic">{{ `- ${dateTimeSettingLabel}` }}</span>
         <span class="text-danger">*</span></label

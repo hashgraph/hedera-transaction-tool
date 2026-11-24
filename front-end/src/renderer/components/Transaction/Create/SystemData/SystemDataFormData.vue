@@ -64,7 +64,7 @@ watch([newFileOrContractId, newFileOrContractStatus], () => {
 });
 
 /* Misc */
-const columnClass = 'col-4 col-xxxl-3';
+const columnClass = 'col-5 col-xxxl-3';
 </script>
 <template>
   <div class="row">
