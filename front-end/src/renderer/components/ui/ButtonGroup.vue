@@ -13,6 +13,7 @@ export interface ButtonGroupItem<T extends string | number> {
 const props = defineProps<{
   items: ButtonGroupItem<T>[];
   activeValue: T;
+  buttonType?: 'button' | 'submit' | 'reset';
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
   notifications?: Record<string, number>;
 }>();
@@ -40,6 +41,7 @@ const handleButtonClick = (value: T) => {
             active: activeValue === item.value,
             'text-body': activeValue !== item.value,
           }"
+          :type="buttonType"
           :color="activeValue === item.value ? color : undefined"
           @click="handleButtonClick(item.value)"
           :data-testid="item.id"
