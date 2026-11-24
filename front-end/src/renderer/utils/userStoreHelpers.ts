@@ -45,7 +45,7 @@ import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 import { createLogger } from '@renderer/utils/logger';
 
 import { safeAwait } from './safeAwait';
-import { getErrorMessage, throwError } from '.';
+import { getErrorMessage, getPublicKeyAndType, throwError } from '.';
 import * as pks from '@renderer/services/publicKeyMappingService';
 
 import type { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
@@ -536,7 +536,7 @@ export const restoreOrganizationKeys = async (
             recoveryPhrase.words,
             '',
             organizationKey.index,
-            'ED25519',
+            getPublicKeyAndType(organizationKey.publicKey).keyType,
           );
           key.publicKey = privateKey.publicKey.toStringRaw();
           key.privateKey = privateKey.toStringRaw();
