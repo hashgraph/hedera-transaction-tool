@@ -1380,6 +1380,8 @@ export class ReceiverService {
       affectedUsers,
     } = ctx;
 
+    const emailsDisabled = this.configService.get<boolean>('DISABLE_NOTIFICATION_EMAILS');
+
     // Process each event
     for (const { entityId: transactionId, additionalData } of events) {
       const transaction = transactionMap.get(transactionId);
@@ -1419,7 +1421,7 @@ export class ReceiverService {
               entityManager,
               transaction,
               syncType,
-              this.getEmailNotificationType(transaction.status),
+              emailsDisabled ? null : this.getEmailNotificationType(transaction.status),
               participants,
               cache,
               keyCache,

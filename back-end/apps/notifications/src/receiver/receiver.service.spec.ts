@@ -1799,6 +1799,31 @@ describe('ReceiverService', () => {
         expect(lockedAt).toBeLessThan(readAt);
       });
 
+      it('still notifies in-app but sends no email when DISABLE_NOTIFICATION_EMAILS is set', async () => {
+        configService.get.mockReturnValue(true);
+        const { ctx } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2, 3],
+          target: [2, 3],
+          existing: [indicatorOf([{ id: 1, userId: 2, isRead: true }])],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect((service as any).createNotificationReceivers).toHaveBeenCalledTimes(1);
+        expect((service as any).createNotificationReceivers).toHaveBeenCalledWith(
+          em,
+          expect.objectContaining({ id: 10 }),
+          [3],
+        );
+        expect(em.save).not.toHaveBeenCalledWith(
+          Notification,
+          expect.objectContaining({ type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES }),
+        );
+        expect(Object.keys(ctx.inAppNotifications)).toEqual(['3']);
+        expect(ctx.emailNotifications).toEqual({});
+      });
+
       it('removes the indicator for a signer who is no longer required, without touching others', async () => {
         const { ctx } = setup({
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
