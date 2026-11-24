@@ -588,7 +588,7 @@ describe('TransactionDetails.vue — fetch failure reporting and recovery', () =
     });
   });
 
-  test('navigates to the default transactions tab when there is no previous tab (e.g. from creation)', async () => {
+  test('navigates to the default transactions tab when there is no previous tab (e.g. a fresh session)', async () => {
     routerMock.previousTab = undefined;
     lookupMock.mockRejectedValue(new Error('network blip'));
 

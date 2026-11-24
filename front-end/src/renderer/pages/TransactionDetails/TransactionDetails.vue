@@ -387,8 +387,8 @@ onBeforeMount(async () => {
     await fetchTransaction();
   } catch (error) {
     // Nothing useful can be shown on this page if the initial load failed; send the user back
-    // to whatever transactions tab they came from (or its default) instead of leaving them on
-    // an infinite loader. Toast manually since catching here stops it from reaching the global
+    // to the transactions tab they last had open (the default tab if there is none, e.g. a
+    // fresh session) instead of leaving them on an infinite loader. Toast manually since catching here stops it from reaching the global
     // onErrorCaptured handler.
     logger.error('Initial transaction load failed; redirecting to transactions list', {
       dbId: id,
