@@ -253,6 +253,63 @@ describe('TransactionDetails.vue review warnings', () => {
     expect(lookupMock).toHaveBeenCalledTimes(1);
   });
 
+  test('a failed refetch after a websocket event toasts the real id and does not redirect or reject', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    toastManager.reset();
+    lookupMock.mockRejectedValue(new Error('network blip'));
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+
+    await expect(
+      onAction([{ transactionIds: [101], groupIds: [], eventType: 'status_update' }]),
+    ).resolves.toBeUndefined();
+    await flushPromises();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).not.toBeNull();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
+  test('a failed legacy (payload-less) refetch also toasts instead of rejecting', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    toastManager.reset();
+    lookupMock.mockRejectedValue(new Error('network blip'));
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+
+    await expect(onAction()).resolves.toBeUndefined();
+    await flushPromises();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).not.toBeNull();
+  });
+
+  test('an event for a different transaction does not toast even if lookups would fail', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    toastManager.reset();
+    lookupMock.mockRejectedValue(new Error('network blip'));
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+
+    await onAction([{ transactionIds: [999], groupIds: [], eventType: 'status_update' }]);
+    await flushPromises();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).toBeNull();
+  });
+
   test('shows no banner when there is no rejection and the transaction is not pending review', async () => {
     const wrapper = await mountTransactionDetails(
       makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_SIGNATURES, reviewerLists: [] }),

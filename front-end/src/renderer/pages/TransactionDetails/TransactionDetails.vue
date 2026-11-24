@@ -86,13 +86,13 @@ const router = useRouter() as _RouterClassic & Record<string, string>;
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
   if (!parsed) {
-    await fetchTransactionOnNotif();
+    await refetchOnNotif();
     return;
   } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!orgTransaction.value && !localTransaction.value) {
-    await fetchTransactionOnNotif();
+    await refetchOnNotif();
     return;
   }
 
@@ -102,7 +102,7 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
     parsed.transactionIds.includes(currentId) ||
     (currentGroupId && parsed.groupIds.includes(currentGroupId))
   ) {
-    await fetchTransactionOnNotif();
+    await refetchOnNotif();
   }
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -361,6 +361,17 @@ async function fetchTransactionOnNotif(): Promise<void> {
   }
   // 2) Now fetch transaction
   await fetchTransaction();
+}
+
+// Websocket-triggered refetches run outside any Vue handler, so a failure would otherwise be an
+// unhandled rejection with no user feedback. buildTransactionFetchError has already logged it.
+// Unlike the initial load the page still has data, so toast but don't redirect.
+async function refetchOnNotif(): Promise<void> {
+  try {
+    await fetchTransactionOnNotif();
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to refresh transaction'));
+  }
 }
 
 /* Hooks */
