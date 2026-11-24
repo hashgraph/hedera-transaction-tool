@@ -7,6 +7,7 @@ import FileIdInput from '@renderer/components/FileIdInput.vue';
 import ContractIdInput from '@renderer/components/ContractIdInput.vue';
 import InputStatusView from '@renderer/components/InputStatusView.vue';
 import { InputStatus } from '@renderer/components/InputStatus.ts';
+import { type InputReport } from '@renderer/components/InputReport.ts';
 
 /* Props */
 const props = defineProps<{
@@ -21,9 +22,12 @@ const emit = defineEmits<{
 
 /* State */
 const fileId: Ref<FileId | null> = ref(null);
-const fileIdStatus: Ref<InputStatus> = ref(InputStatus.empty);
+const fileIdReport: Ref<InputReport<FileId>> = ref({ status: InputStatus.empty, value: null });
 const contractId: Ref<ContractId | null> = ref(null);
-const contractIdStatus: Ref<InputStatus> = ref(InputStatus.empty);
+const contractIdReport: Ref<InputReport<ContractId>> = ref({
+  status: InputStatus.empty,
+  value: null,
+});
 const targetType: Ref<TargetType> = ref('file');
 
 /* Computed */
@@ -34,11 +38,24 @@ const buttonItems: ButtonGroupItem<TargetType>[] = [
 ];
 
 const newFileOrContractId = computed(() => {
-  return targetType.value === 'file' ? fileId.value : contractId.value;
-});
-
-const newFileOrContractStatus = computed(() => {
-  return targetType.value === 'file' ? fileIdStatus.value : contractIdStatus.value;
+  let result: FileId | ContractId | null;
+  if (targetType.value === 'file') {
+    if (fileIdReport.value.status === InputStatus.invalid) {
+      // File ID is invalid => we keep current value (if any)
+      result = props.data.fileOrContractId instanceof FileId ? props.data.fileOrContractId : null;
+    } else {
+      result = fileIdReport.value.value;
+    }
+  } else {
+    if (contractIdReport.value.status === InputStatus.invalid) {
+      // Contract ID is invalid => we keep current value (if any)
+      result =
+        props.data.fileOrContractId instanceof ContractId ? props.data.fileOrContractId : null;
+    } else {
+      result = contractIdReport.value.value;
+    }
+  }
+  return result;
 });
 
 /* Hooks */
@@ -57,10 +74,16 @@ watch(
   },
   { immediate: true },
 );
-watch([newFileOrContractId, newFileOrContractStatus], () => {
-  if (newFileOrContractStatus.value !== InputStatus.invalid) {
-    emit('update:data', { ...props.data, fileOrContractId: newFileOrContractId.value });
-  }
+watch(newFileOrContractId, () => {
+  const className =
+    newFileOrContractId.value instanceof FileId
+      ? 'FileId'
+      : newFileOrContractId.value instanceof ContractId
+        ? 'ContractId'
+        : 'null';
+  console.log('className=' + className);
+  console.log('newFileOrContractId.value=' + (newFileOrContractId.value?.toString() ?? 'null'));
+  emit('update:data', { ...props.data, fileOrContractId: newFileOrContractId.value });
 });
 
 /* Misc */
@@ -88,15 +111,15 @@ const columnClass = 'col-5 col-xxxl-3';
     <template v-if="targetType == 'file'">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">File ID <span class="text-danger">*</span></label>
-        <FileIdInput v-model:fileId="fileId" @inputStatus="fileIdStatus = $event" />
-        <InputStatusView :status="fileIdStatus" invalidMessage="Invalid file ID" />
+        <FileIdInput v-model:fileId="fileId" @inputReport="fileIdReport = $event" />
+        <InputStatusView :status="fileIdReport.status" invalidMessage="Invalid file ID" />
       </div>
     </template>
     <template v-else>
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Contract ID <span class="text-danger">*</span></label>
-        <ContractIdInput v-model:contractId="contractId" @inputStatus="contractIdStatus = $event" />
-        <InputStatusView :status="contractIdStatus" invalidMessage="Invalid Contract ID" />
+        <ContractIdInput v-model:contractId="contractId" @inputReport="contractIdReport = $event" />
+        <InputStatusView :status="contractIdReport.status" invalidMessage="Invalid Contract ID" />
       </div>
     </template>
   </div>

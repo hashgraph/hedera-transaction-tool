@@ -2,14 +2,14 @@
 import { computed, ref, watch } from 'vue';
 import { ContractId } from '@hiero-ledger/sdk';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { InputStatus } from '@renderer/components/InputStatus.ts';
+import { type InputReport, InputStatus } from '@renderer/components/InputReport.ts';
 
 /* Models */
 const contractId = defineModel<ContractId | null>('contractId', { required: true });
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'inputStatus', status: InputStatus): void;
+  (event: 'inputReport', status: InputReport<ContractId>): void;
 }>();
 
 /* State */
@@ -32,12 +32,15 @@ const newContractId = computed<ContractId | null>(() => {
   return result;
 });
 
-const inputStatus = computed<InputStatus>(() => {
-  let result: InputStatus;
+const inputReport = computed<InputReport<ContractId>>(() => {
+  let result: InputReport<ContractId>;
   if (trimmedInputText.value === '') {
-    result = InputStatus.empty;
+    result = { status: InputStatus.empty, value: null };
   } else {
-    result = newContractId.value !== null ? InputStatus.valid : InputStatus.invalid;
+    result =
+      newContractId.value !== null
+        ? { status: InputStatus.valid, value: newContractId.value }
+        : { status: InputStatus.invalid, value: null };
   }
   return result;
 });
@@ -57,7 +60,7 @@ watch(newContractId, () => {
   contractId.value = newContractId.value;
 });
 
-watch(inputStatus, () => emit('inputStatus', inputStatus.value), { immediate: true });
+watch(inputReport, () => emit('inputReport', inputReport.value), { immediate: true });
 </script>
 
 <template>

@@ -3,13 +3,14 @@ import { computed, ref, watch } from 'vue';
 import { FileId } from '@hiero-ledger/sdk';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import { InputStatus } from '@renderer/components/InputStatus.ts';
+import { type InputReport } from '@renderer/components/InputReport.ts';
 
 /* Models */
 const fileId = defineModel<FileId | null>('fileId', { required: true });
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'inputStatus', status: InputStatus): void;
+  (event: 'inputReport', report: InputReport<FileId>): void;
 }>();
 
 /* State */
@@ -32,12 +33,15 @@ const newFileId = computed<FileId | null>(() => {
   return result;
 });
 
-const inputStatus = computed<InputStatus>(() => {
-  let result: InputStatus;
+const inputReport = computed<InputReport<FileId>>(() => {
+  let result: InputReport<FileId>;
   if (trimmedInputText.value === '') {
-    result = InputStatus.empty;
+    result = { status: InputStatus.empty, value: null };
   } else {
-    result = newFileId.value !== null ? InputStatus.valid : InputStatus.invalid;
+    result =
+      newFileId.value !== null
+        ? { status: InputStatus.valid, value: newFileId.value }
+        : { status: InputStatus.invalid, value: null };
   }
   return result;
 });
@@ -57,7 +61,7 @@ watch(newFileId, () => {
   fileId.value = newFileId.value;
 });
 
-watch(inputStatus, () => emit('inputStatus', inputStatus.value), { immediate: true });
+watch(inputReport, () => emit('inputReport', inputReport.value), { immediate: true });
 </script>
 
 <template>
