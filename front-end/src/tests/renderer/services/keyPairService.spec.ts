@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, test, expect } from 'vitest';
 import { ContractId, DelegateContractId, Key, KeyList, PrivateKey } from '@hiero-ledger/sdk';
-import { flattenKeyList } from '@renderer/services/keyPairService';
+import { detectPrivateKeyType, flattenKeyList } from '@renderer/services/keyPairService';
 
 describe('keyPairService.flattenKeyList - contract components', () => {
   const pk = PrivateKey.generateED25519().publicKey;
@@ -23,5 +23,25 @@ describe('keyPairService.flattenKeyList - contract components', () => {
     for (const key of [unknown, new KeyList([pk, new KeyList([unknown])], 1)]) {
       expect(() => flattenKeyList(key)).toThrow('Unsupported key type');
     }
+  });
+});
+
+describe('keyPairService.detectPrivateKeyType', () => {
+  test('detects a DER-encoded ED25519 key', () => {
+    expect(detectPrivateKeyType(PrivateKey.generateED25519().toStringDer())).toBe('ED25519');
+  });
+
+  test('detects a DER-encoded ECDSA key', () => {
+    expect(detectPrivateKeyType(PrivateKey.generateECDSA().toStringDer())).toBe('ECDSA');
+  });
+
+  test('does not guess the type of a raw 32-byte key', () => {
+    expect(detectPrivateKeyType(PrivateKey.generateED25519().toStringRaw())).toBeNull();
+    expect(detectPrivateKeyType(PrivateKey.generateECDSA().toStringRaw())).toBeNull();
+  });
+
+  test('returns null for empty or non-hex input', () => {
+    expect(detectPrivateKeyType('')).toBeNull();
+    expect(detectPrivateKeyType('not a key')).toBeNull();
   });
 });

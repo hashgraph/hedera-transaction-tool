@@ -191,6 +191,43 @@ export const generateExternalKeyPairFromString = (
   }
 };
 
+/**
+ * Determines the key type of a pasted private key string.
+ * Only DER-encoded keys carry the algorithm; raw hex keys are ambiguous and return null.
+ */
+export const detectPrivateKeyType = (privateKey: string): 'ED25519' | 'ECDSA' | null => {
+  const hex = privateKey.trim().replace(/^0x/i, '');
+
+  // A raw 32-byte key (64 hex chars) has no algorithm information, and the SDK
+  // would silently treat it as ED25519, so it must not be auto-detected.
+  if (!/^[0-9a-f]+$/i.test(hex) || hex.length <= 64) {
+    return null;
+  }
+
+  try {
+    const instance = PrivateKey.fromStringDer(hex);
+    return instance.type === 'secp256k1' ? 'ECDSA' : 'ED25519';
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Generates a random (non-recoverable) key pair of the given type.
+ */
+export const generateRandomKeyPair = (
+  type: 'ECDSA' | 'ED25519',
+  nickname: string,
+): { index: number; public_key: string; private_key: string; nickname: string | null } => {
+  const instance = type === 'ECDSA' ? PrivateKey.generateECDSA() : PrivateKey.generateED25519();
+  return {
+    nickname: nickname || null,
+    private_key: instance.toStringRaw(),
+    public_key: instance.publicKey.toStringRaw(),
+    index: -1,
+  };
+};
+
 function flattenComplexKey(
   key: proto.Key,
   level: number,
