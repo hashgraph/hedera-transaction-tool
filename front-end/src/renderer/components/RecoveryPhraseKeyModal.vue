@@ -98,11 +98,18 @@ const handleClearWords = () => {
   user.setRecoveryPhrase(null);
 };
 
-const handleCopyPhrase = () => {
+const handleCopyPhrase = async () => {
   if (!user.recoveryPhrase) return;
-  navigator.clipboard.writeText(user.recoveryPhrase.words.join(', '));
-  logger.info('Recovery phrase copied to clipboard');
-  toastManager.success('Recovery phrase copied');
+
+  try {
+    await navigator.clipboard.writeText(user.recoveryPhrase.words.join(', '));
+    logger.info('Recovery phrase copied to clipboard');
+    toastManager.success('Recovery phrase copied');
+  } catch (error) {
+    // The error is logged without the phrase
+    logger.error('Failed to copy the recovery phrase to the clipboard', { error });
+    toastManager.error(getErrorMessage(error, 'Failed to copy the recovery phrase'));
+  }
 };
 
 const handleNext = () => {

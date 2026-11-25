@@ -306,6 +306,50 @@ describe('RecoveryPhraseKeyModal.vue', () => {
         expect(mocks.logger.info).toHaveBeenCalledWith('Recovery phrase copied to clipboard');
         expect(JSON.stringify(mocks.logger.info.mock.calls)).not.toContain('word1');
       });
+
+      test('does not report success until the clipboard write has finished', async () => {
+        let finishWrite!: () => void;
+        writeText.mockReturnValue(new Promise<void>(resolve => (finishWrite = resolve)));
+        const wrapper = await mountModal();
+        await setPhrase();
+
+        await click(wrapper, 'button-copy-phrase');
+        expect(mocks.toastSuccess).not.toHaveBeenCalled();
+
+        finishWrite();
+        await flushPromises();
+        expect(mocks.toastSuccess).toHaveBeenCalledWith('Recovery phrase copied');
+      });
+
+      describe('when the clipboard write fails', () => {
+        const failure = new Error('Write permission denied.');
+
+        test('shows an error instead of a success message', async () => {
+          writeText.mockRejectedValue(failure);
+          const wrapper = await mountModal();
+          await setPhrase();
+
+          await click(wrapper, 'button-copy-phrase');
+
+          expect(mocks.toastError).toHaveBeenCalledWith('Write permission denied.');
+          expect(mocks.toastSuccess).not.toHaveBeenCalled();
+          expect(mocks.logger.info).not.toHaveBeenCalledWith('Recovery phrase copied to clipboard');
+        });
+
+        test('logs the failure, never the words', async () => {
+          writeText.mockRejectedValue(failure);
+          const wrapper = await mountModal();
+          await setPhrase();
+
+          await click(wrapper, 'button-copy-phrase');
+
+          expect(mocks.logger.error).toHaveBeenCalledWith(
+            'Failed to copy the recovery phrase to the clipboard',
+            { error: failure },
+          );
+          expect(JSON.stringify(mocks.logger.error.mock.calls)).not.toContain('word1');
+        });
+      });
     });
 
     describe('the nickname of a phrase that is already known', () => {
