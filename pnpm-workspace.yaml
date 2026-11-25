@@ -41,8 +41,8 @@ allowBuilds:
 catalog:
   '@eslint/eslintrc': 3.3.7
   '@eslint/js': 10.0.1
-  '@typescript-eslint/eslint-plugin': 8.72.2
-  '@typescript-eslint/parser': 8.72.2
+  '@typescript-eslint/eslint-plugin': 8.73.0
+  '@typescript-eslint/parser': 8.73.0
   '@hiero-ledger/proto': 2.32.1
   '@hiero-ledger/sdk': 2.91.0
   '@types/bcrypt': 6.0.0
@@ -104,19 +104,14 @@ overrides:
   "protobufjs@>=8.0.0": "8.7.1"
   "serialize-javascript": "7.1.4"
   "js-yaml": "5.4.3"
-  "fast-uri": "3.1.9"
   "diff@<5.2.2": "5.2.2"
   "diff@>=6.0.0": "8.0.3"
   "ws@>=8.0.0": "8.21.0"
-  "undici@>=7.0.0": "7.30.1"
   "uuid@<11.1.1": "11.1.1"
   "flat-cache@6.1.24": "4.0.1"
-  "undici@<7.0.0": "6.29.1"
   "image-size": "2.0.4"
-  "multer": "2.5.0"
   "mysql2": "3.24.5"
   "node-abi": "4.38.0"
-  "body-parser": "2.4.0"
   "follow-redirects": "1.16.2"
   "minimatch@>=7.0.0": "11.0.1"
   "glob@>=9.0.0": "14.0.4"
