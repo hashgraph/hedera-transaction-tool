@@ -13,7 +13,7 @@ import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNi
 
 import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseInput.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
 import Generate from './Generate.vue';
 import UseExistingKey from './UseExistingKey.vue';
@@ -105,7 +105,10 @@ watch(activeTabTitle, newTitle => {
         <Generate :handle-next="handleNext" />
       </template>
       <template v-else-if="activeTabTitle === importExistingTitle">
-        <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
+        <RecoveryPhraseInput
+          :should-clear="shouldClearInputs"
+          @reset-cleared="handleClearWords($event)"
+        />
 
         <div class="form-group mt-4">
           <label class="form-label">Enter Recovery Phrase Nickname</label>

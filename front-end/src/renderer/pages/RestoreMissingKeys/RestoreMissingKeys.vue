@@ -19,7 +19,7 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -160,7 +160,10 @@ onMounted(() => {
       <form @submit.prevent="handleImportRecoveryPhrase" class="fill-remaining">
         <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
         <div class="mt-8">
-          <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
+          <RecoveryPhraseInput
+            :should-clear="shouldClearInputs"
+            @reset-cleared="handleClearWords($event)"
+          />
           <div class="d-flex justify-content-between mt-4 mx-3">
             <div class="">
               <AppButton type="button" color="secondary" @click="handleClearWords(true)"

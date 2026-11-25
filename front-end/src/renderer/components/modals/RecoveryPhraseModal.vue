@@ -3,7 +3,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseInput.vue';
 import { ref } from 'vue';
 
 /* Props */
@@ -68,7 +68,7 @@ const handleClearWords = (value: boolean) => {
 
         <p class="text-center">You may skip this step and all keys will be marked as external</p>
 
-        <Import
+        <RecoveryPhraseInput
           :should-clear="shouldClearInputs"
           @reset-cleared="handleClearWords($event)"
           class="mt-4"

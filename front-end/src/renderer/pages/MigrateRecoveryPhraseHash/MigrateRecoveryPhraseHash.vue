@@ -16,7 +16,7 @@ import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhras
 import { isLoggedInOrganization, safeAwait } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 import DeleteAllKeysRequiringHashMigrationModal from '@renderer/components/modals/DeleteAllKeysRequiringHashMigrationModal.vue';
 import { updateIndex, updateMnemonicHash } from '@renderer/services/keyPairService.ts';
@@ -141,7 +141,7 @@ watch(() => user.recoveryPhrase, handleVerify);
           rematch your keys.
         </p>
         <div class="mt-4">
-          <Import />
+          <RecoveryPhraseInput />
         </div>
 
         <div class="mt-5 ms-3">

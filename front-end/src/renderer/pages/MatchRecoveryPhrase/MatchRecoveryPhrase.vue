@@ -8,7 +8,7 @@ import useMatchRecoveryPrase from '@renderer/composables/useMatchRecoveryPhrase'
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseInput.vue';
 
 const SEARCHING_TEXT = 'Abort Search';
 
@@ -86,7 +86,7 @@ watch([startIndex, endIndex], async ([start, end]) => {
       Enter a recovery phrase to automatically match your external keys to it.
     </p>
     <div class="mt-8">
-      <Import />
+      <RecoveryPhraseInput />
     </div>
 
     <hr class="separator my-4 mx-3" />

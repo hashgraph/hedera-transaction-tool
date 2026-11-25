@@ -3,7 +3,7 @@ import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseInput.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
@@ -33,7 +33,10 @@ const handleClearWords = (value: boolean) => {
   <form @submit.prevent="handleImportRecoveryPhrase" class="fill-remaining">
     <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
     <div class="mt-8">
-      <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
+      <RecoveryPhraseInput
+        :should-clear="shouldClearInputs"
+        @reset-cleared="handleClearWords($event)"
+      />
 
       <hr class="separator my-4 mx-3" />
 
