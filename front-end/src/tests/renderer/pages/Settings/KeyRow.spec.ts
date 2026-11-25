@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { PrivateKey } from '@hiero-ledger/sdk';
 
 const mocks = vi.hoisted(() => ({
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     selectedOrganization: null,
     personal: { id: 'user-1' },
   },
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({ default: () => mocks.user }));
@@ -18,7 +19,7 @@ vi.mock('@renderer/composables/usePersonalPassword', () => ({
 }));
 vi.mock('@renderer/services/keyPairService', () => ({ decryptPrivateKey: vi.fn() }));
 vi.mock('@renderer/utils/ToastManager', () => ({
-  ToastManager: { inject: () => ({ success: vi.fn(), error: vi.fn() }) },
+  ToastManager: { inject: () => mocks.toast },
 }));
 
 import KeyRow from '@renderer/pages/Settings/components/KeysTab/components/KeyRow.vue';
@@ -55,6 +56,8 @@ const cell = (wrapper: ReturnType<typeof mountRow>, name: string, row = 0) =>
 
 describe('KeyRow.vue', () => {
   beforeEach(() => {
+    mocks.toast.success.mockReset();
+    mocks.toast.error.mockReset();
     mocks.user.publicKeyToAccounts = [];
     mocks.user.selectedOrganization = null;
   });
@@ -119,6 +122,38 @@ describe('KeyRow.vue', () => {
       const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
 
       expect(cell(wrapper, 'account').text()).toBe('N/A');
+    });
+  });
+
+  describe('copying the public key', () => {
+    const copyTestId = 'span-copy-public-key-0';
+    let writeText: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      writeText = vi.fn();
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    });
+
+    test('copies it and reports success', async () => {
+      writeText.mockResolvedValue(undefined);
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      await wrapper.find(`[data-testid="${copyTestId}"]`).trigger('click');
+      await flushPromises();
+
+      expect(writeText).toHaveBeenCalledWith(ed25519);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Public Key copied successfully');
+    });
+
+    test('reports an error, not success, when the clipboard write fails', async () => {
+      writeText.mockRejectedValue(new Error('Write permission denied.'));
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      await wrapper.find(`[data-testid="${copyTestId}"]`).trigger('click');
+      await flushPromises();
+
+      expect(mocks.toast.error).toHaveBeenCalledWith('Write permission denied.');
+      expect(mocks.toast.success).not.toHaveBeenCalled();
     });
   });
 });

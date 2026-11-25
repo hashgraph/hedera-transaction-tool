@@ -11,7 +11,7 @@ import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNi
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
 
-import { isLoggedInOrganization } from '@renderer/utils';
+import { getErrorMessage, isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -89,9 +89,13 @@ const handleWordChange = (newWord: string, index: number) => {
   words.value = [...words.value];
 };
 
-const handleCopyRecoveryPhrase = () => {
-  navigator.clipboard.writeText(words.value.join(', '));
-  toastManager.success('Recovery phrase copied');
+const handleCopyRecoveryPhrase = async () => {
+  try {
+    await navigator.clipboard.writeText(words.value.join(', '));
+    toastManager.success('Recovery phrase copied');
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to copy the recovery phrase'));
+  }
 };
 
 const handleGenerate = async () => {

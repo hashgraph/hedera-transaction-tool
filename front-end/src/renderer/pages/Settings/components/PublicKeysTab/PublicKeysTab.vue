@@ -5,6 +5,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
+import { getErrorMessage } from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -42,9 +43,13 @@ const handleStartNicknameEdit = (publicKeyMapping: PublicKeyMapping) => {
   isUpdateNicknameModalShown.value = true;
 };
 
-const handleCopy = (text: string, message: string) => {
-  navigator.clipboard.writeText(text);
-  toastManager.success(message);
+const handleCopy = async (text: string, message: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toastManager.success(message);
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to copy to the clipboard'));
+  }
 };
 
 const handleSelectAll = () => {

@@ -21,6 +21,8 @@ vi.mock('@renderer/composables/useVersionCheck', () => ({
   default: () => ({ performVersionCheck: mocks.performVersionCheck }),
 }));
 vi.mock('@renderer/utils', () => ({
+  getErrorMessage: (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback,
   isLoggedInOrganization: mocks.isLoggedInOrganization,
   isUserLoggedIn: (user: { isLoggedIn?: boolean } | null) => Boolean(user?.isLoggedIn),
 }));
@@ -187,6 +189,21 @@ describe('Migrate: summary step', () => {
 
       expect(writeText).toHaveBeenCalledWith('inmate, modify, chronic');
       expect(success).toHaveBeenCalledWith('Recovery phrase copied to clipboard');
+    });
+
+    test('copy button shows an error, not a success message, when the clipboard write fails', async () => {
+      mocks.user.recoveryPhrase = { words };
+      const writeText = vi.fn().mockRejectedValue(new Error('Write permission denied.'));
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      const success = vi.spyOn(toastManager, 'success');
+      const error = vi.spyOn(toastManager, 'error');
+      const wrapper = mountStep();
+
+      await wrapper.get('[log-label="copy-recovery-phrase"]').trigger('click');
+      await flushPromises();
+
+      expect(error).toHaveBeenCalledWith('Write permission denied.');
+      expect(success).not.toHaveBeenCalled();
     });
   });
 

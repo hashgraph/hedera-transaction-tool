@@ -145,6 +145,18 @@ describe('settings public keys coverage', () => {
     expect(mocks.toastSuccess).toHaveBeenCalledWith('Public Key copied successfully');
   });
 
+  test('shows an error, not a success message, when copying a public key fails', async () => {
+    mocks.clipboardWriteText.mockRejectedValue(new Error('Write permission denied.'));
+    const wrapper = mount(PublicKeysTab, { global: { stubs } });
+    await flushPromises();
+
+    await wrapper.find('[data-testid="span-copy-public-key-0"]').trigger('click');
+    await flushPromises();
+
+    expect(mocks.toastError).toHaveBeenCalledWith('Write permission denied.');
+    expect(mocks.toastSuccess).not.toHaveBeenCalled();
+  });
+
   test('renames a public key mapping from the row action', async () => {
     const wrapper = mount(PublicKeysTab, {
       global: {
@@ -181,9 +193,7 @@ describe('settings public keys coverage', () => {
 
     expect(mocks.userStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-1');
     expect(mocks.userStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-2');
-    expect(mocks.toastSuccess).toHaveBeenCalledWith(
-      'Public key mapping(s) deleted successfully',
-    );
+    expect(mocks.toastSuccess).toHaveBeenCalledWith('Public key mapping(s) deleted successfully');
   });
 
   test('deletes a public key mapping from the row action', async () => {
@@ -199,9 +209,7 @@ describe('settings public keys coverage', () => {
     await flushPromises();
 
     expect(mocks.userStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-1');
-    expect(mocks.toastSuccess).toHaveBeenCalledWith(
-      'Public key mapping(s) deleted successfully',
-    );
+    expect(mocks.toastSuccess).toHaveBeenCalledWith('Public key mapping(s) deleted successfully');
   });
 
   test('imports public key mappings and validates disabled and invalid states', async () => {
@@ -214,11 +222,15 @@ describe('settings public keys coverage', () => {
       },
     });
 
-    expect(wrapper.find('[data-testid="button-public-key-import"]').attributes('disabled')).toBeDefined();
+    expect(
+      wrapper.find('[data-testid="button-public-key-import"]').attributes('disabled'),
+    ).toBeDefined();
 
     await wrapper.find('[data-testid="input-public-key-mapping"]').setValue('invalid-key');
     await wrapper.find('[data-testid="input-public-key-nickname"]').setValue('Bad Key');
-    expect(wrapper.find('[data-testid="button-public-key-import"]').attributes('disabled')).toBeUndefined();
+    expect(
+      wrapper.find('[data-testid="button-public-key-import"]').attributes('disabled'),
+    ).toBeUndefined();
     await wrapper.find('form').trigger('submit');
     await flushPromises();
 

@@ -8,7 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.page.migrate.summary');
@@ -66,11 +66,15 @@ const handleCopy = (event: ClipboardEvent) => {
 };
 
 /* Functions */
-const copyRecoveryPhrase = () => {
+const copyRecoveryPhrase = async () => {
   const recoveryPhrase = user.recoveryPhrase?.words.join(', ') || '';
-  navigator.clipboard.writeText(recoveryPhrase).then(() => {
+  try {
+    await navigator.clipboard.writeText(recoveryPhrase);
     toastManager.success('Recovery phrase copied to clipboard');
-  });
+  } catch (error) {
+    logger.error('Failed to copy the recovery phrase to the clipboard', { error });
+    toastManager.error(getErrorMessage(error, 'Failed to copy the recovery phrase'));
+  }
 };
 
 /* Hooks */
