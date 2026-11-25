@@ -41,11 +41,12 @@ import {
   TransactionId,
   Transfer,
   TransferTransaction,
+  ContractId,
 } from '@hiero-ledger/sdk';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
 
-import { isAccountId, isContractId, isFileId } from '../validator';
+import { isAccountId, isFileId } from '../validator';
 import { compareKeys } from '.';
 import { applyNanoOffset } from './timestamp';
 import { hexToUint8Array } from '@renderer/utils';
@@ -203,8 +204,7 @@ export type RegisteredNodeDeleteData = {
 };
 
 export type SystemData = {
-  fileId: string;
-  contractId: string;
+  fileOrContractId: FileId | ContractId | null;
 };
 
 export type SystemDeleteData = SystemData & {
@@ -955,12 +955,12 @@ const setSystemData = (
   transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
   data: SystemData,
 ) => {
-  if (isFileId(data.fileId)) {
-    transaction.setFileId(data.fileId);
+  if (data.fileOrContractId instanceof FileId) {
+    transaction.setFileId(data.fileOrContractId);
   }
 
-  if (isContractId(data.contractId)) {
-    transaction.setContractId(data.contractId);
+  if (data.fileOrContractId instanceof ContractId) {
+    transaction.setContractId(data.fileOrContractId);
   }
 };
 

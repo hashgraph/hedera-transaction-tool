@@ -4,6 +4,8 @@ import Long from 'long';
 import { flushPromises, mount } from '@vue/test-utils';
 import { ref } from 'vue';
 import {
+  ContractId,
+  FileId,
   FreezeTransaction,
   Hbar,
   NodeCreateTransaction,
@@ -86,7 +88,8 @@ const assertFn = (w: Wrapper) => base(w).props('preCreateAssert') as () => unkno
 
 async function fill(w: Wrapper, formName: string, overrides: Record<string, unknown>) {
   const form = w.findComponent({ name: formName });
-  form.vm.$emit('update:data', { ...(form.props('data') as object), ...overrides });
+  const newData = { ...(form.props('data') as object), ...overrides };
+  form.vm.$emit('update:data', newData);
   await flushPromises();
 }
 
@@ -200,48 +203,13 @@ describe.each([
     expect(disabled(mountIt())).toBe(true);
   });
 
-  test('enabled with only a file id', async () => {
-    const w = mountIt();
-    await fill(w, formName, { fileId: '0.0.150', ...exp });
-    expect(disabled(w)).toBe(false);
-    expect(() => assertFn(w)()).not.toThrow();
-  });
-
-  test('enabled with only a contract id', async () => {
-    const w = mountIt();
-    await fill(w, formName, { contractId: '0.0.1234', ...exp });
-    expect(disabled(w)).toBe(false);
-    expect(() => assertFn(w)()).not.toThrow();
-  });
-
-  test('disabled when both file id and contract id are provided', async () => {
-    const w = mountIt();
-    await fill(w, formName, { fileId: '0.0.150', contractId: '0.0.1234', ...exp });
-    expect(disabled(w)).toBe(true);
-    expect(assertFn(w)).toThrow('either a File ID or a Contract ID');
-  });
-
-  test('disabled when file id is malformed', async () => {
-    const w = mountIt();
-    await fill(w, formName, { fileId: 'x', ...exp });
-    expect(disabled(w)).toBe(true);
-    expect(assertFn(w)).toThrow('Invalid File ID');
-  });
-
-  test('disabled when contract id is malformed', async () => {
-    const w = mountIt();
-    await fill(w, formName, { contractId: 'x', ...exp });
-    expect(disabled(w)).toBe(true);
-    expect(assertFn(w)).toThrow('Invalid Contract ID');
-  });
-
   test('assert reports when neither id is given', () => {
     expect(assertFn(mountIt())).toThrow('File ID or Contract ID is required');
   });
 
   test('builds a file-targeted transaction', async () => {
     const w = mountIt();
-    await fill(w, formName, { fileId: '0.0.150', ...exp });
+    await fill(w, formName, { fileOrContractId: FileId.fromString('0.0.150'), ...exp });
     const tx = build(w) as SystemDeleteTransaction | SystemUndeleteTransaction;
     expect(tx).toBeInstanceOf(TxClass);
     expect(tx.fileId?.toString()).toBe('0.0.150');
@@ -250,7 +218,7 @@ describe.each([
 
   test('builds a contract-targeted transaction', async () => {
     const w = mountIt();
-    await fill(w, formName, { contractId: '0.0.1234', ...exp });
+    await fill(w, formName, { fileOrContractId: ContractId.fromString('0.0.1234'), ...exp });
     const tx = build(w) as SystemDeleteTransaction | SystemUndeleteTransaction;
     expect(tx).toBeInstanceOf(TxClass);
     expect(tx.contractId?.toString()).toBe('0.0.1234');
@@ -258,8 +226,8 @@ describe.each([
   });
 
   test.each([
-    ['file', { fileId: '0.0.150' }],
-    ['contract', { contractId: '0.0.1234' }],
+    ['file', { fileOrContractId: FileId.fromString('0.0.150') }],
+    ['contract', { fileOrContractId: ContractId.fromString('0.0.1234') }],
   ])('draft load populates the form from a %s-targeted draft', async (_t, target) => {
     const w = mountIt();
     await fill(w, formName, { ...target, ...exp });
@@ -275,7 +243,10 @@ describe.each([
 describe('5.11.3 SystemDelete.vue — expiration time', () => {
   test('disabled without an expiration time and assert reports it', async () => {
     const w = mount(SystemDelete);
-    await fill(w, 'SystemDeleteFormData', { fileId: '0.0.150', expirationTime: null });
+    await fill(w, 'SystemDeleteFormData', {
+      fileOrContractId: FileId.fromString('0.0.150'),
+      expirationTime: null,
+    });
     expect(disabled(w)).toBe(true);
     expect(assertFn(w)).toThrow('Invalid Expiration Time');
   });

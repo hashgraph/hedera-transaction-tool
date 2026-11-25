@@ -16,7 +16,7 @@ import { setStoredClaim } from '@renderer/services/claimService';
 import { isUserLoggedIn } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
+import ButtonGroup, { type ButtonGroupItem } from '@renderer/components/ui/ButtonGroup.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -42,7 +42,7 @@ const isCustomActive = computed(
     ].includes(networkStore.network),
 );
 
-const networkButtons = computed(() => [
+const networkButtons = computed<ButtonGroupItem<string>[]>(() => [
   ...Object.values(CommonNetwork).map(network => ({
     label: CommonNetworkNames[network],
     value: network,

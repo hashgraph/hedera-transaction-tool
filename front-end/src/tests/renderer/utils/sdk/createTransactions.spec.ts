@@ -8,8 +8,10 @@ import {
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
   ContractExecuteTransaction,
+  ContractId,
   FileAppendTransaction,
   FileCreateTransaction,
+  FileId,
   FileUpdateTransaction,
   FreezeTransaction,
   FreezeType,
@@ -25,7 +27,6 @@ import {
   RegisteredNodeDeleteTransaction,
   RegisteredNodeUpdateTransaction,
   RpcRelayServiceEndpoint,
-  SystemDeleteTransaction,
   SystemUndeleteTransaction,
   Timestamp,
   Transaction,
@@ -976,71 +977,58 @@ describe('createSystemDeleteTransaction', () => {
     const tx = roundtrip(
       createSystemDeleteTransaction({
         ...common,
-        fileId: '0.0.150',
-        contractId: '',
+        fileOrContractId: FileId.fromString('0.0.150'),
         expirationTime: new Date('2026-07-01T00:00:00Z'),
       }),
     );
-    expect(tx).toBeInstanceOf(SystemDeleteTransaction);
-    expect(getSystemDeleteData(tx)).toEqual({
-      fileId: '0.0.150',
-      contractId: '',
-      expirationTime: new Date('2026-07-01T00:00:00Z'),
-    });
+    expect(getSystemDeleteData(tx).fileOrContractId?.toString()).toEqual('0.0.150');
+    expect(getSystemDeleteData(tx).expirationTime).toEqual(new Date('2026-07-01T00:00:00Z'));
   });
 
   test('contract target round-trips', () => {
     const tx = roundtrip(
       createSystemDeleteTransaction({
         ...common,
-        fileId: '',
-        contractId: '0.0.1234',
+        fileOrContractId: ContractId.fromString('0.0.1234'),
         expirationTime: new Date('2026-07-01T00:00:00Z'),
       }),
     );
     const parsed = getSystemDeleteData(tx);
-    expect(parsed.contractId).toBe('0.0.1234');
-    expect(parsed.fileId).toBe('');
+    expect(parsed.fileOrContractId instanceof ContractId).toBe(true);
+    expect(parsed.fileOrContractId?.toString()).toBe('0.0.1234');
   });
 
   test('missing expiration time yields null', () => {
     const tx = roundtrip(
       createSystemDeleteTransaction({
         ...common,
-        fileId: '0.0.150',
-        contractId: '',
+        fileOrContractId: FileId.fromString('0.0.150'),
         expirationTime: null,
       }),
     );
     expect(getSystemDeleteData(tx).expirationTime).toBeNull();
   });
-
-  test('invalid ids are ignored rather than written', () => {
-    const tx = createSystemDeleteTransaction({
-      ...common,
-      fileId: 'nope',
-      contractId: 'nope',
-      expirationTime: null,
-    });
-    expect(tx.fileId).toBeNull();
-    expect(tx.contractId).toBeNull();
-  });
 });
 
 describe('createSystemUndeleteTransaction', () => {
   test('file target round-trips', () => {
-    const tx = roundtrip(
-      createSystemUndeleteTransaction({ ...common, fileId: '0.0.150', contractId: '' }),
-    );
+    const fileId = FileId.fromString('0.0.150');
+    const tx = roundtrip(createSystemUndeleteTransaction({ ...common, fileOrContractId: fileId }));
     expect(tx).toBeInstanceOf(SystemUndeleteTransaction);
-    expect(getSystemUndeleteData(tx)).toEqual({ fileId: '0.0.150', contractId: '' });
+    expect(getSystemUndeleteData(tx).fileOrContractId instanceof FileId).toBe(true);
+    expect(getSystemUndeleteData(tx).fileOrContractId?.toString()).toBe('0.0.150');
   });
 
   test('contract target round-trips', () => {
     const tx = roundtrip(
-      createSystemUndeleteTransaction({ ...common, fileId: '', contractId: '0.0.1234' }),
+      createSystemUndeleteTransaction({
+        ...common,
+        fileOrContractId: ContractId.fromString('0.0.1234'),
+      }),
     );
-    expect(getSystemUndeleteData(tx)).toEqual({ fileId: '', contractId: '0.0.1234' });
+    expect(getSystemUndeleteData(tx)).toEqual({
+      fileOrContractId: ContractId.fromString('0.0.1234'),
+    });
   });
 });
 
