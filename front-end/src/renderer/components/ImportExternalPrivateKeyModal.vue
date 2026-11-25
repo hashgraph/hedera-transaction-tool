@@ -10,6 +10,7 @@ import useStoreExternalKeyPair from '@renderer/composables/useStoreExternalKeyPa
 import {
   detectPrivateKeyType,
   generateExternalKeyPairFromString,
+  isPrivateKeyWellFormed,
   verifyKeyPair,
 } from '@renderer/services/keyPairService';
 
@@ -72,6 +73,9 @@ const hasTypeMismatch = computed(
 );
 
 const typeMessage = computed(() => {
+  if (key.privateKey.trim() !== '' && isMalformed.value) {
+    return 'Invalid private key.';
+  }
   if (props.keyType || key.privateKey.trim() === '') return null;
   if (hasTypeMismatch.value) {
     return `Pasted key is ${detectedKeyType.value}, not ${selectedKeyType.value}.`;
@@ -82,8 +86,14 @@ const typeMessage = computed(() => {
   return null;
 });
 
+const isMalformed = computed(() => !isPrivateKeyWellFormed(key.privateKey));
+
 const canImport = computed(
-  () => key.privateKey.trim() !== '' && resolvedKeyType.value !== null && !hasTypeMismatch.value,
+  () =>
+    key.privateKey.trim() !== '' &&
+    resolvedKeyType.value !== null &&
+    !hasTypeMismatch.value &&
+    !isMalformed.value,
 );
 
 /* Handlers */

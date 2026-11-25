@@ -4,7 +4,9 @@ import { ContractId, DelegateContractId, Key, KeyList, PrivateKey } from '@hiero
 import {
   detectPrivateKeyType,
   flattenKeyList,
+  generateExternalKeyPairFromString,
   generateRandomKeyPair,
+  isPrivateKeyWellFormed,
 } from '@renderer/services/keyPairService';
 
 describe('keyPairService.flattenKeyList - contract components', () => {
@@ -84,6 +86,33 @@ describe('keyPairService.detectPrivateKeyType - input handling', () => {
 
     expect(detectPrivateKeyType(der.slice(0, -2))).toBeNull();
     expect(detectPrivateKeyType(`${der}00`)).toBeNull();
+  });
+});
+
+describe('keyPairService.generateExternalKeyPairFromString - malformed input', () => {
+  test.each([
+    ['48 bytes of garbage', 'ab'.repeat(48)],
+    ['50 bytes of garbage', 'ab'.repeat(50)],
+  ])('rejects %s for either type instead of using the last 32 bytes', (_label, input) => {
+    expect(isPrivateKeyWellFormed(input)).toBe(false);
+    expect(() => generateExternalKeyPairFromString(input, 'ECDSA', '')).toThrow(
+      'Invalid ECDSA Private key',
+    );
+    expect(() => generateExternalKeyPairFromString(input, 'ED25519', '')).toThrow(
+      'Invalid ED25519 Private key',
+    );
+  });
+
+  test('accepts genuine raw and DER keys', () => {
+    const ecdsa = PrivateKey.generateECDSA();
+    const ed25519 = PrivateKey.generateED25519();
+
+    expect(isPrivateKeyWellFormed(ecdsa.toStringRaw())).toBe(true);
+    expect(isPrivateKeyWellFormed(ecdsa.toStringDer())).toBe(true);
+    expect(isPrivateKeyWellFormed(ed25519.toStringDer())).toBe(true);
+    expect(generateExternalKeyPairFromString(ecdsa.toStringDer(), 'ECDSA', '').private_key).toBe(
+      ecdsa.toStringRaw(),
+    );
   });
 });
 

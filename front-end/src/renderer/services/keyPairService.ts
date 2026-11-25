@@ -154,6 +154,26 @@ export const getKeyListLevels = (keyList: KeyList) => {
   return maxLevel + 1;
 };
 
+/**
+ * The SDK is lenient with 48 or 50 byte hex strings (the DER lengths of an ED25519 / ECDSA key):
+ * for anything of those lengths it falls back to using the last 32 bytes, which would store a
+ * different key than the one pasted. A genuine DER key always encodes back to the same string.
+ * Other inputs are left to the SDK, which rejects what it can't parse.
+ */
+export const isPrivateKeyWellFormed = (privateKey: string): boolean => {
+  const hex = privateKey.trim().replace(/^0x/i, '');
+
+  if (!/^[0-9a-f]+$/i.test(hex) || (hex.length !== 96 && hex.length !== 100)) {
+    return true;
+  }
+
+  try {
+    return PrivateKey.fromStringDer(hex).toStringDer() === hex.toLowerCase();
+  } catch {
+    return false;
+  }
+};
+
 export const generateExternalKeyPairFromString = (
   privateKey: string,
   type: 'ECDSA' | 'ED25519',
@@ -166,6 +186,10 @@ export const generateExternalKeyPairFromString = (
   nickname: string | null;
 } => {
   try {
+    if (!isPrivateKeyWellFormed(privateKey)) {
+      throw new Error('Malformed private key');
+    }
+
     let privateKeyInstance;
 
     switch (type) {
