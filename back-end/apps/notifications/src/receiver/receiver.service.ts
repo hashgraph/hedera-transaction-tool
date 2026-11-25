@@ -64,6 +64,12 @@ export class ReceiverService {
     [TransactionStatus.CANCELED]: NotificationType.TRANSACTION_CANCELLED,
   };
 
+  // Statuses in which required signers still receive notifications and may still change
+  private static readonly SIGNER_SYNC_STATUSES = new Set<TransactionStatus>([
+    TransactionStatus.WAITING_FOR_SIGNATURES,
+    TransactionStatus.WAITING_FOR_EXECUTION,
+  ]);
+
   // Three lifecycle tiers used to determine when a group email should fire.
   // Tier 1 = signing, Tier 2 = executing, Tier 3 = terminal (all else).
   // A group email fires once all non-CANCELLED members share the same tier.
@@ -247,6 +253,7 @@ export class ReceiverService {
     transaction: Transaction,
     newIndicatorType: NotificationType,
     keyCache?: Map<string, UserKey>,
+    participants?: Awaited<ReturnType<ReceiverService['getTransactionParticipants']>>,
   ): Promise<number[]> {
     /* Get transaction participants */
     const {
@@ -254,7 +261,7 @@ export class ReceiverService {
       reviewerUserIds,
       requiredUserIds,
       creatorId,
-    } = await this.getTransactionParticipants(entityManager, transaction, keyCache);
+    } = participants ?? (await this.getTransactionParticipants(entityManager, transaction, keyCache));
 
     switch (newIndicatorType) {
       case NotificationType.TRANSACTION_INDICATOR_REVIEW:
@@ -1225,33 +1232,216 @@ export class ReceiverService {
     await this.sendNotifyClients(affectedUsers, TRANSACTION_EVENT_TYPE.STATUS_UPDATE);
   }
 
+  /**
+   * Reconciles signer notifications for a signable transaction whose required signers may have
+   * changed. Triggered when a cached account or node changed (a `signersChanged` update event).
+   * - Required signers with no existing notification get the in-app indicator and, if opted in, the email.
+   * - Users who should no longer have the indicator have it removed (in-app only; sent emails stay).
+   * Users who were already notified, including those who have since read or signed, are left alone.
+   */
+  private async syncSignerNotifications(
+    entityManager: EntityManager,
+    transaction: Transaction,
+    syncType: NotificationType,
+    emailType: NotificationType | null,
+    participants: Awaited<ReturnType<ReceiverService['getTransactionParticipants']>>,
+    cache: Map<number, User>,
+    keyCache: Map<string, UserKey>,
+    deletionNotifications: { [userId: number]: number[] },
+    inAppNotifications: { [userId: number]: NotificationReceiver[] },
+    inAppReceiverIds: number[],
+    emailNotifications: { [email: string]: Notification[] },
+    emailReceiverIds: number[],
+    affectedUsers: Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>,
+  ) {
+    const transactionId = transaction.id;
+    const groupId = transaction.groupItem?.groupId;
+
+    // This reads who is already notified and then creates what is missing. The shared consumer can
+    // hand two events for the same transaction to different replicas, so serialize them on the
+    // transaction row: the second one waits, then sees what the first created and has nothing to
+    // add. Everything below must be read after the lock. It does not block other transactions or
+    // writers that only reference the row.
+    await entityManager.findOne(Transaction, {
+      where: { id: transactionId },
+      select: { id: true },
+      lock: { mode: 'for_no_key_update' },
+    });
+
+    const targetIds = new Set(
+      await this.getNotificationReceiverIds(
+        entityManager,
+        transaction,
+        syncType,
+        keyCache,
+        participants,
+      ),
+    );
+
+    // Everyone already notified for this status, over any channel
+    const existing = await entityManager.find(Notification, {
+      where: { entityId: transactionId, type: In(emailType ? [syncType, emailType] : [syncType]) },
+      relations: { notificationReceivers: true },
+    });
+    const indicator = existing.find(n => n.type === syncType);
+    const notifiedIds = new Set(
+      existing.flatMap(n => n.notificationReceivers.map(nr => nr.userId)),
+    );
+
+    // Users who no longer receive the indicator
+    const removed = (indicator?.notificationReceivers ?? []).filter(
+      nr => !targetIds.has(nr.userId),
+    );
+    if (removed.length > 0) {
+      await entityManager.delete(NotificationReceiver, { id: In(removed.map(nr => nr.id)) });
+      removed.forEach(nr => {
+        if (!deletionNotifications[nr.userId]) deletionNotifications[nr.userId] = [];
+        deletionNotifications[nr.userId].push(nr.id);
+        this.addAffectedUser(affectedUsers, nr.userId, transactionId, groupId);
+      });
+    }
+
+    // Required signers that have not been notified yet
+    const addedIds = new Set(participants.requiredUserIds.filter(id => !notifiedIds.has(id)));
+    if (addedIds.size === 0) return;
+
+    const additionalData = this.buildAdditionalData(transaction);
+
+    const inAppIds = await this.filterReceiversByPreferenceForType(
+      entityManager,
+      syncType,
+      addedIds,
+      cache,
+      'inApp',
+    );
+    if (inAppIds.length > 0) {
+      const notification =
+        indicator ??
+        (await entityManager.save(Notification, {
+          type: syncType,
+          entityId: transactionId,
+          notificationReceivers: [],
+          additionalData,
+        }));
+      const newReceivers = await this.createNotificationReceivers(
+        entityManager,
+        notification,
+        inAppIds,
+      );
+      newReceivers.forEach(nr => {
+        if (!inAppNotifications[nr.userId]) inAppNotifications[nr.userId] = [];
+        inAppNotifications[nr.userId].push(nr);
+        inAppReceiverIds.push(nr.id);
+        this.addAffectedUser(affectedUsers, nr.userId, transactionId, groupId);
+      });
+    }
+
+    if (emailType) {
+      const emailIds = await this.filterReceiversByPreferenceForType(
+        entityManager,
+        emailType,
+        addedIds,
+        cache,
+        'email',
+      );
+      if (emailIds.length > 0) {
+        const notification = await entityManager.save(Notification, {
+          type: emailType,
+          entityId: transactionId,
+          notificationReceivers: [],
+          additionalData,
+        });
+        const newReceivers = await this.createNotificationReceivers(
+          entityManager,
+          notification,
+          emailIds,
+        );
+        this.collectEmailNotifications(newReceivers, [], emailNotifications, emailReceiverIds, cache);
+        newReceivers.forEach(nr =>
+          this.addAffectedUser(affectedUsers, nr.userId, transactionId, groupId),
+        );
+      }
+    }
+  }
+
   async processTransactionUpdateNotifications(events: NotificationEventDto[]) {
     const ctx = await this.prepareEventContext(events);
     if (!ctx) return;
 
-    const { keyCache, transactionMap, affectedUsers } = ctx;
+    const {
+      cache,
+      keyCache,
+      transactionMap,
+      deletionNotifications,
+      inAppNotifications,
+      emailNotifications,
+      inAppReceiverIds,
+      emailReceiverIds,
+      affectedUsers,
+    } = ctx;
+
+    const emailsDisabled = this.configService.get<boolean>('DISABLE_NOTIFICATION_EMAILS');
 
     // Process each event
-    for (const { entityId: transactionId } of events) {
+    for (const { entityId: transactionId, additionalData } of events) {
       const transaction = transactionMap.get(transactionId);
       if (!transaction) continue;
 
       const syncType = this.getInAppNotificationType(transaction.status);
 
-      if (syncType) {
-        const receiverIds = await this.getNotificationReceiverIds(
-          this.entityManager,
-          transaction,
-          syncType,
-          keyCache,
-        );
-        const groupId = transaction.groupItem?.groupId;
-        receiverIds.forEach(id => {
-          this.addAffectedUser(affectedUsers, id, transactionId, groupId);
-        });
+      if (!syncType) continue;
+
+      // Computed once and shared by the ping and the signer sync below
+      const participants = await this.getTransactionParticipants(
+        this.entityManager,
+        transaction,
+        keyCache,
+      );
+      const receiverIds = await this.getNotificationReceiverIds(
+        this.entityManager,
+        transaction,
+        syncType,
+        keyCache,
+        participants,
+      );
+      const groupId = transaction.groupItem?.groupId;
+      receiverIds.forEach(id => {
+        this.addAffectedUser(affectedUsers, id, transactionId, groupId);
+      });
+
+      // A cached account or node changed, so the required signers may have too:
+      // notify added signers and clear removed ones
+      if (
+        additionalData?.signersChanged === true &&
+        ReceiverService.SIGNER_SYNC_STATUSES.has(transaction.status)
+      ) {
+        try {
+          await this.entityManager.transaction(async entityManager => {
+            await this.syncSignerNotifications(
+              entityManager,
+              transaction,
+              syncType,
+              emailsDisabled ? null : this.getEmailNotificationType(transaction.status),
+              participants,
+              cache,
+              keyCache,
+              deletionNotifications,
+              inAppNotifications,
+              inAppReceiverIds,
+              emailNotifications,
+              emailReceiverIds,
+              affectedUsers,
+            );
+          });
+        } catch (error) {
+          console.error(`Error syncing signer notifications for transaction ${transactionId}:`, error);
+        }
       }
     }
 
+    await this.sendDeletionNotifications(deletionNotifications);
+    await this.sendInAppNotifications(inAppNotifications, inAppReceiverIds);
+    await this.sendEmailNotifications(emailNotifications, emailReceiverIds);
     await this.sendNotifyClients(affectedUsers, TRANSACTION_EVENT_TYPE.UPDATE);
   }
 

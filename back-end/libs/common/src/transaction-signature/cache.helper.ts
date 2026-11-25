@@ -136,27 +136,35 @@ export class CacheHelper {
   }
 
   /**
-   * Insert keys for a cached entity (idempotent).
+   * Replace the key rows of a cached entity with the given set, in one transaction.
+   * Existing rows are deleted first so keys that are no longer present (a key change, or the
+   * entity becoming keyless) do not linger. An empty set leaves the entity with no key rows.
+   *
+   * The key entity must expose the parent id as `<parentFieldName>Id` (e.g. cachedAccountId).
    */
-  async insertKeys(
+  async replaceKeys(
     keyEntity: EntityTarget<any>,
     parentId: number,
     parentFieldName: string,
     keys: PublicKey[],
   ): Promise<void> {
-    if (keys.length === 0) return;
+    await this.dataSource.transaction(async manager => {
+      await manager.delete(keyEntity, { [`${parentFieldName}Id`]: parentId });
 
-    await this.dataSource
-      .createQueryBuilder()
-      .insert()
-      .into(keyEntity)
-      .values(
-        keys.map((key) => ({
-          [parentFieldName]: { id: parentId },
-          publicKey: key.toStringRaw(),
-        })),
-      )
-      .orIgnore()
-      .execute();
+      if (keys.length === 0) return;
+
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(keyEntity)
+        .values(
+          keys.map(key => ({
+            [parentFieldName]: { id: parentId },
+            publicKey: key.toStringRaw(),
+          })),
+        )
+        .orIgnore()
+        .execute();
+    });
   }
 }

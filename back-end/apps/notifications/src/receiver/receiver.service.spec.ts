@@ -1631,6 +1631,13 @@ describe('ReceiverService', () => {
 
       em.qb.getMany.mockResolvedValueOnce([transaction]);
       em.query.mockResolvedValueOnce([]);
+      (service as any).getTransactionParticipants = jest.fn().mockResolvedValue({
+        creatorId: 1,
+        observerUserIds: [],
+        reviewerUserIds: [],
+        requiredUserIds: [2],
+        participants: [1, 2],
+      });
       (service as any).getNotificationReceiverIds = jest.fn().mockResolvedValue([2]);
 
       await service.processTransactionUpdateNotifications([{ entityId: 7 } as any]);
@@ -1640,8 +1647,14 @@ describe('ReceiverService', () => {
 
     it('skips processing when transaction not found in map (continue at line 1098)', async () => {
       const ctx = {
+        cache: new Map(),
         keyCache: new Map(),
-        transactionMap: new Map(), // empty — entityId 999 will not be found
+        transactionMap: new Map(), // empty — entityId 999 will not be found,
+        deletionNotifications: {},
+        inAppNotifications: {},
+        emailNotifications: {},
+        inAppReceiverIds: [],
+        emailReceiverIds: [],
         affectedUsers: new Map(),
       };
       jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
@@ -1655,8 +1668,14 @@ describe('ReceiverService', () => {
     it('skips notify-clients call when syncType is null for transaction (false branch at if(syncType))', async () => {
       const transaction: any = { id: 7, status: 9999 as any }; // unknown status → null syncType
       const ctx = {
+        cache: new Map(),
         keyCache: new Map(),
         transactionMap: new Map([[7, transaction]]),
+        deletionNotifications: {},
+        inAppNotifications: {},
+        emailNotifications: {},
+        inAppReceiverIds: [],
+        emailReceiverIds: [],
         affectedUsers: new Map(),
       };
       jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
@@ -1666,6 +1685,373 @@ describe('ReceiverService', () => {
 
       // syncType is null for unmapped status → if(syncType) false → no receiver lookup
       expect(getReceiverSpy).not.toHaveBeenCalled();
+    });
+
+    describe('signer sync', () => {
+      const makeCtx = (transaction: any) => ({
+        cache: new Map<number, any>(
+          [2, 3, 9].map(id => [id, { id, email: `user${id}@example.com` }]),
+        ),
+        keyCache: new Map(),
+        transactionMap: new Map([[transaction.id, transaction]]),
+        deletionNotifications: {} as any,
+        inAppNotifications: {} as any,
+        emailNotifications: {} as any,
+        inAppReceiverIds: [] as number[],
+        emailReceiverIds: [] as number[],
+        affectedUsers: new Map(),
+      });
+
+      const makeTx = (status: TransactionStatus) =>
+        ({ id: 7, status, transactionId: '0.0.2@1', mirrorNetwork: 'testnet' }) as any;
+
+      const setup = (opts: {
+        status: TransactionStatus;
+        required: number[];
+        target: number[];
+        existing: any[];
+      }) => {
+        const transaction = makeTx(opts.status);
+        const ctx = makeCtx(transaction);
+        jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+        jest.spyOn(service as any, 'getTransactionParticipants').mockResolvedValue({
+          creatorId: 1,
+          observerUserIds: [],
+          reviewerUserIds: [],
+          requiredUserIds: opts.required,
+          participants: [1, ...opts.required],
+        });
+        jest.spyOn(service as any, 'getNotificationReceiverIds').mockResolvedValue(opts.target);
+        em.find.mockResolvedValue(opts.existing);
+        jest.spyOn(service as any, 'filterReceiversByPreferenceForType').mockImplementation(
+          async (...args: any[]) => [...(args[2] as Set<number>)],
+        );
+        jest
+          .spyOn(service as any, 'createNotificationReceivers')
+          .mockImplementation(async (...args: any[]) =>
+            (args[2] as number[]).map(userId => ({ id: 100 + userId, userId, notification: args[1] })),
+          );
+        em.save.mockImplementation(async (_e: any, data: any) => ({ id: 500, ...data }));
+        return { ctx, transaction };
+      };
+
+      const indicatorOf = (receivers: any[]) => ({
+        id: 10,
+        type: NotificationType.TRANSACTION_INDICATOR_SIGN,
+        notificationReceivers: receivers,
+      });
+      const emailOf = (receivers: any[]) => ({
+        id: 11,
+        type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+        notificationReceivers: receivers,
+      });
+
+      it('notifies a newly required signer (in-app and email) and leaves existing signers alone', async () => {
+        const { ctx } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2, 3],
+          target: [2, 3],
+          existing: [
+            indicatorOf([{ id: 1, userId: 2, isRead: true }]),
+            emailOf([{ id: 2, userId: 2 }]),
+          ],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        // user 3 is new: indicator receiver on the existing indicator + a new email notification
+        expect((service as any).createNotificationReceivers).toHaveBeenCalledTimes(2);
+        expect((service as any).createNotificationReceivers).toHaveBeenCalledWith(
+          em,
+          expect.objectContaining({ id: 10 }),
+          [3],
+        );
+        expect(em.save).toHaveBeenCalledWith(
+          Notification,
+          expect.objectContaining({
+            type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+            entityId: 7,
+          }),
+        );
+        expect(Object.keys(ctx.inAppNotifications)).toEqual(['3']);
+        expect(em.delete).not.toHaveBeenCalled();
+      });
+
+      it('locks the transaction row before reading who is already notified', async () => {
+        setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2, 3],
+          target: [2, 3],
+          existing: [indicatorOf([{ id: 1, userId: 2 }])],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect(em.findOne).toHaveBeenCalledWith(
+          Transaction,
+          expect.objectContaining({
+            where: { id: 7 },
+            lock: { mode: 'for_no_key_update' },
+          }),
+        );
+        const lockedAt = em.findOne.mock.invocationCallOrder[0];
+        const readAt = em.find.mock.invocationCallOrder[0];
+        expect(lockedAt).toBeLessThan(readAt);
+      });
+
+      it('still notifies in-app but sends no email when DISABLE_NOTIFICATION_EMAILS is set', async () => {
+        configService.get.mockReturnValue(true);
+        const { ctx } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2, 3],
+          target: [2, 3],
+          existing: [indicatorOf([{ id: 1, userId: 2, isRead: true }])],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect((service as any).createNotificationReceivers).toHaveBeenCalledTimes(1);
+        expect((service as any).createNotificationReceivers).toHaveBeenCalledWith(
+          em,
+          expect.objectContaining({ id: 10 }),
+          [3],
+        );
+        expect(em.save).not.toHaveBeenCalledWith(
+          Notification,
+          expect.objectContaining({ type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES }),
+        );
+        expect(Object.keys(ctx.inAppNotifications)).toEqual(['3']);
+        expect(ctx.emailNotifications).toEqual({});
+      });
+
+      it('removes the indicator for a signer who is no longer required, without touching others', async () => {
+        const { ctx } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2],
+          target: [2],
+          existing: [
+            indicatorOf([
+              { id: 1, userId: 2 },
+              { id: 5, userId: 9 },
+            ]),
+          ],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect(em.delete).toHaveBeenCalledWith(NotificationReceiver, { id: In([5]) });
+        expect(ctx.deletionNotifications).toEqual({ 9: [5] });
+        expect((service as any).createNotificationReceivers).not.toHaveBeenCalled();
+        expect(emitDeleteNotifications).toHaveBeenCalled();
+      });
+
+      it('appends to existing per-user collections when several transactions affect the same user', async () => {
+        const { ctx } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [3],
+          target: [3],
+          existing: [indicatorOf([{ id: 5, userId: 9 }])],
+        });
+        ctx.deletionNotifications[9] = [1];
+        ctx.inAppNotifications[3] = [{ id: 99 } as any];
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect(ctx.deletionNotifications[9]).toEqual([1, 5]);
+        expect(ctx.inAppNotifications[3]).toHaveLength(2);
+      });
+
+      it('keeps the indicator of a user who is no longer required but is still a participant', async () => {
+        // ready for execution: the target also contains creator/observers/reviewers
+        setup({
+          status: TransactionStatus.WAITING_FOR_EXECUTION,
+          required: [2],
+          target: [1, 2],
+          existing: [
+            {
+              id: 10,
+              type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+              notificationReceivers: [
+                { id: 1, userId: 1 },
+                { id: 2, userId: 2 },
+              ],
+            },
+          ],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect(em.delete).not.toHaveBeenCalled();
+      });
+
+      it('does nothing extra when the signers are unchanged', async () => {
+        setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2],
+          target: [2],
+          existing: [
+            indicatorOf([{ id: 1, userId: 2 }]),
+            emailOf([{ id: 2, userId: 2 }]),
+          ],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect(em.delete).not.toHaveBeenCalled();
+        expect((service as any).createNotificationReceivers).not.toHaveBeenCalled();
+        expect(em.save).not.toHaveBeenCalled();
+      });
+
+      it('does not re-notify an email-only user who has an email receiver but no indicator', async () => {
+        setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2],
+          target: [2],
+          existing: [indicatorOf([]), emailOf([{ id: 2, userId: 2 }])],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect((service as any).createNotificationReceivers).not.toHaveBeenCalled();
+      });
+
+      it('creates no notification rows for a new signer whose preferences exclude every channel', async () => {
+        setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [3],
+          target: [3],
+          existing: [indicatorOf([])],
+        });
+        (service as any).filterReceiversByPreferenceForType.mockResolvedValue([]);
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        expect(em.save).not.toHaveBeenCalled();
+        expect((service as any).createNotificationReceivers).not.toHaveBeenCalled();
+      });
+
+      it('creates the indicator notification when none exists yet and skips email when there is no email type', async () => {
+        const { ctx, transaction } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [3],
+          target: [3],
+          existing: [],
+        });
+
+        await (service as any).syncSignerNotifications(
+          em,
+          transaction,
+          NotificationType.TRANSACTION_INDICATOR_SIGN,
+          null,
+          {
+            creatorId: 1,
+            observerUserIds: [],
+            reviewerUserIds: [],
+            requiredUserIds: [3],
+            participants: [1, 3],
+          },
+          ctx.cache,
+          ctx.keyCache,
+          ctx.deletionNotifications,
+          ctx.inAppNotifications,
+          ctx.inAppReceiverIds,
+          ctx.emailNotifications,
+          ctx.emailReceiverIds,
+          ctx.affectedUsers,
+        );
+
+        expect(em.find).toHaveBeenCalledWith(
+          Notification,
+          expect.objectContaining({
+            where: expect.objectContaining({ type: In([NotificationType.TRANSACTION_INDICATOR_SIGN]) }),
+          }),
+        );
+        expect(em.save).toHaveBeenCalledTimes(1);
+        expect(em.save).toHaveBeenCalledWith(
+          Notification,
+          expect.objectContaining({ type: NotificationType.TRANSACTION_INDICATOR_SIGN, entityId: 7 }),
+        );
+        expect(Object.keys(ctx.inAppNotifications)).toEqual(['3']);
+        expect(ctx.emailNotifications).toEqual({});
+      });
+
+      it('computes the participants once per transaction and shares them with the ping and the sync', async () => {
+        const { transaction } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2],
+          target: [2],
+          existing: [indicatorOf([{ id: 1, userId: 2 }])],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        const participantsSpy = (service as any).getTransactionParticipants as jest.Mock;
+        expect(participantsSpy).toHaveBeenCalledTimes(1);
+        const participants = await participantsSpy.mock.results[0].value;
+
+        // the ping lookup and the sync both receive the same participants object
+        const receiverIdsSpy = (service as any).getNotificationReceiverIds as jest.Mock;
+        expect(receiverIdsSpy).toHaveBeenCalledTimes(2);
+        for (const call of receiverIdsSpy.mock.calls) {
+          expect(call[0]).toBeDefined();
+          expect(call[1]).toBe(transaction);
+          expect(call[4]).toBe(participants);
+        }
+      });
+
+      it('does not sync signers for an update that does not carry the signersChanged flag', async () => {
+        const { ctx } = setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [2, 3],
+          target: [2, 3],
+          existing: [indicatorOf([{ id: 1, userId: 2 }])],
+        });
+
+        // e.g. a signature upload that leaves the transaction waiting
+        await service.processTransactionUpdateNotifications([{ entityId: 7 } as any]);
+
+        expect(em.transaction).not.toHaveBeenCalled();
+        expect(em.find).not.toHaveBeenCalled();
+        expect((service as any).createNotificationReceivers).not.toHaveBeenCalled();
+        // the websocket ping still goes to the required signers
+        expect(emitNotifyClients).toHaveBeenCalled();
+        expect(ctx.deletionNotifications).toEqual({});
+      });
+
+      it('does not sync signers for statuses that are not signable', async () => {
+        setup({
+          status: TransactionStatus.EXECUTED,
+          required: [3],
+          target: [3],
+          existing: [],
+        });
+
+        await service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]);
+
+        // the ping still computes the participants once, but the signer sync does not run
+        expect((service as any).getTransactionParticipants).toHaveBeenCalledTimes(1);
+        expect(em.transaction).not.toHaveBeenCalled();
+        expect(em.find).not.toHaveBeenCalled();
+      });
+
+      it('logs and continues when the sync fails', async () => {
+        setup({
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          required: [3],
+          target: [3],
+          existing: [],
+        });
+        em.find.mockRejectedValue(new Error('db down'));
+        const errSpy = jest.spyOn(console, 'error').mockImplementation();
+
+        await expect(
+          service.processTransactionUpdateNotifications([{ entityId: 7, additionalData: { signersChanged: true } } as any]),
+        ).resolves.toBeUndefined();
+
+        expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('7'), expect.any(Error));
+        expect(emitNotifyClients).toHaveBeenCalled();
+        errSpy.mockRestore();
+      });
     });
   });
 

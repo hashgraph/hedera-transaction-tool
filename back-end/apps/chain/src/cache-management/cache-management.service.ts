@@ -6,15 +6,11 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   CachedAccount,
   CachedNode,
-  TransactionCachedAccount,
-  TransactionCachedNode,
   TransactionStatus,
 } from '@entities';
 import {
-  emitTransactionUpdate,
   AccountCacheService,
   MirrorNodeCircuitBreaker,
-  NatsPublisherService,
   NodeCacheService,
 } from '@app/common';
 
@@ -36,7 +32,6 @@ export class CacheManagementService {
     @InjectRepository(CachedNode)
     private readonly nodeRepository: Repository<CachedNode>,
     private readonly configService: ConfigService,
-    private readonly notificationsPublisher: NatsPublisherService,
     private readonly circuitBreaker: MirrorNodeCircuitBreaker,
   ) {
     this.staleThresholdMs =  this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
@@ -103,9 +98,9 @@ export class CacheManagementService {
     const reclaimDate = new Date(Date.now() - this.reclaimTimeoutMs);
 
     // Non-zero benefit, but mainly to ensure locks are released immediately
-    const accountTransactionMap = await this.dataSource.transaction(
-      async (manager) => {
-        const staleAccounts = await manager
+    const staleAccounts = await this.dataSource.transaction(
+      async (manager) =>
+        manager
           .createQueryBuilder(CachedAccount, 'c')
           .where('c.updatedAt < :staleTime OR c.updatedAt IS NULL', {
             staleTime,
@@ -117,53 +112,26 @@ export class CacheManagementService {
           .limit(this.batchSize)
           .setLock('pessimistic_write')
           .setOnLocked('skip_locked')
-          .getMany();
-
-        if (staleAccounts.length === 0) {
-          return new Map<CachedAccount, number[]>();
-        }
-
-        const accountIds = staleAccounts.map(a => a.id);
-
-        // Get all transaction associations for these accounts
-        // innerJoinAndSelect loads the full Transaction entity
-        const transactionAccounts = await manager
-          .createQueryBuilder(TransactionCachedAccount, 'tca')
-          .innerJoinAndSelect('tca.transaction', 't')           // Load the transaction relation
-          .where('tca.cachedAccountId IN (:...accountIds)', { accountIds })
-          .getMany();
-
-        // Build map of CachedAccount -> transaction IDs
-        const map = new Map<CachedAccount, number[]>();
-        for (const account of staleAccounts) {
-          const txIds = transactionAccounts
-            .filter(ta => ta.cachedAccountId === account.id)
-            .map(ta => ta.transaction.id);
-          map.set(account, txIds);
-        }
-
-        return map;
-      }
+          .getMany(),
     );
 
-    if (accountTransactionMap.size === 0) {
+    if (staleAccounts.length === 0) {
       return;
     }
 
     // Group accounts by mirrorNetwork
-    const networkGroups = new Map<string, [CachedAccount, number[]][]>();
-    for (const [account, txIds] of accountTransactionMap) {
+    const networkGroups = new Map<string, CachedAccount[]>();
+    for (const account of staleAccounts) {
       const network = account.mirrorNetwork;
       if (!networkGroups.has(network)) {
         networkGroups.set(network, []);
       }
-      networkGroups.get(network)!.push([account, txIds]);
+      networkGroups.get(network)!.push(account);
     }
 
-    // Track which transactions need updates
-    const transactionsToUpdate = new Set<number>();
-
-    // Process each network group
+    // Process each network group.
+    // A refresh that changes the cached data tells the notifications service itself
+    // (see AccountCacheService), so nothing is emitted from here.
     for (const [network, entries] of networkGroups) {
       if (!this.circuitBreaker.isAvailable(network)) {
         this.logger.warn(
@@ -174,12 +142,9 @@ export class CacheManagementService {
 
       const errors = new Set<string>();
 
-      for (const [account, txIds] of entries) {
+      for (const account of entries) {
         try {
-          const wasRefreshed = await this.accountCacheService.refreshAccount(account);
-          if (wasRefreshed) {
-            txIds.forEach(txId => transactionsToUpdate.add(txId));
-          }
+          await this.accountCacheService.refreshAccount(account);
           this.circuitBreaker.recordSuccess(network);
         } catch (error: any) {
           const stillAvailable = this.circuitBreaker.recordFailure(network);
@@ -195,29 +160,16 @@ export class CacheManagementService {
         );
       }
     }
-
-    // Emit updates for affected transactions
-    if (transactionsToUpdate.size > 0) {
-      this.logger.log(
-        `Refreshed accounts, updating ${transactionsToUpdate.size} transactions`,
-      );
-
-      emitTransactionUpdate(
-        this.notificationsPublisher,
-        Array.from(transactionsToUpdate).map(id => ({ entityId: id }))
-      );
-    }
   }
 
   async refreshStaleNodes() {
     const staleTime = new Date(Date.now() - this.staleThresholdMs);
     const reclaimDate = new Date(Date.now() - this.reclaimTimeoutMs);
 
-    // Fetch stale nodes and their associated transactions in one transaction
-    const nodeTransactionMap = await this.dataSource.transaction(
-      async (manager) => {
-        // Get stale nodes with pessimistic lock
-        const staleNodes = await manager
+    // Get stale nodes with pessimistic lock
+    const staleNodes = await this.dataSource.transaction(
+      async (manager) =>
+        manager
           .createQueryBuilder(CachedNode, 'c')
           .where('c.updatedAt < :staleTime OR c.updatedAt IS NULL', {
             staleTime,
@@ -229,53 +181,26 @@ export class CacheManagementService {
           .limit(this.batchSize)
           .setLock('pessimistic_write')
           .setOnLocked('skip_locked')
-          .getMany();
-
-        if (staleNodes.length === 0) {
-          return new Map<CachedNode, number[]>();
-        }
-
-        const nodeIds = staleNodes.map(n => n.id);
-
-        // Get all transaction associations for these nodes
-        // innerJoinAndSelect loads the full Transaction entity
-        const transactionNodes = await manager
-          .createQueryBuilder(TransactionCachedNode, 'tcn')
-          .innerJoinAndSelect('tcn.transaction', 't')     // Load the transaction relation
-          .where('tcn.cachedNodeId IN (:...nodeIds)', { nodeIds })
-          .getMany();
-
-        // Build map of CachedNode -> transaction IDs
-        const map = new Map<CachedNode, number[]>();
-        for (const node of staleNodes) {
-          const txIds = transactionNodes
-            .filter(tn => tn.cachedNodeId === node.id)
-            .map(tn => tn.transaction.id);
-          map.set(node, txIds);
-        }
-
-        return map;
-      }
+          .getMany(),
     );
 
-    if (nodeTransactionMap.size === 0) {
+    if (staleNodes.length === 0) {
       return;
     }
 
     // Group nodes by mirrorNetwork
-    const networkGroups = new Map<string, [CachedNode, number[]][]>();
-    for (const [node, txIds] of nodeTransactionMap) {
+    const networkGroups = new Map<string, CachedNode[]>();
+    for (const node of staleNodes) {
       const network = node.mirrorNetwork;
       if (!networkGroups.has(network)) {
         networkGroups.set(network, []);
       }
-      networkGroups.get(network)!.push([node, txIds]);
+      networkGroups.get(network)!.push(node);
     }
 
-    // Track which transactions need updates
-    const transactionsToUpdate = new Set<number>();
-
-    // Process each network group
+    // Process each network group.
+    // A refresh that changes the cached data tells the notifications service itself
+    // (see NodeCacheService), so nothing is emitted from here.
     for (const [network, entries] of networkGroups) {
       if (!this.circuitBreaker.isAvailable(network)) {
         this.logger.warn(
@@ -286,12 +211,9 @@ export class CacheManagementService {
 
       const errors = new Set<string>();
 
-      for (const [node, txIds] of entries) {
+      for (const node of entries) {
         try {
-          const wasRefreshed = await this.nodeCacheService.refreshNode(node);
-          if (wasRefreshed) {
-            txIds.forEach(txId => transactionsToUpdate.add(txId));
-          }
+          await this.nodeCacheService.refreshNode(node);
           this.circuitBreaker.recordSuccess(network);
         } catch (error: any) {
           const stillAvailable = this.circuitBreaker.recordFailure(network);
@@ -306,18 +228,6 @@ export class CacheManagementService {
           `Node refresh failures for network "${network}": ${Array.from(errors).join('; ')}`,
         );
       }
-    }
-
-    // Emit updates for affected transactions
-    if (transactionsToUpdate.size > 0) {
-      this.logger.log(
-        `Refreshed nodes, updating ${transactionsToUpdate.size} transactions`,
-      );
-
-      emitTransactionUpdate(
-        this.notificationsPublisher,
-        Array.from(transactionsToUpdate).map(id => ({ entityId: id }))
-      );
     }
   }
 

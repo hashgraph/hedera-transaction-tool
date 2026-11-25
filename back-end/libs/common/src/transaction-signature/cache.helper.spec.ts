@@ -403,30 +403,45 @@ describe('CacheHelper', () => {
     });
   });
 
-  describe('insertKeys', () => {
+  describe('replaceKeys', () => {
     const keyEntity = {} as any;
+    let manager: any;
 
-    it('does nothing when keys array is empty', async () => {
-      await helper.insertKeys(keyEntity, 1, 'account', []);
+    const makeKey = (raw: string) => ({ toStringRaw: jest.fn(() => raw) }) as unknown as PublicKey;
 
-      expect(dataSource.createQueryBuilder).not.toHaveBeenCalled();
+    beforeEach(() => {
+      manager = {
+        delete: jest.fn().mockResolvedValue({}),
+        createQueryBuilder: jest.fn(() => qb),
+      };
+      (dataSource as any).transaction = jest.fn(async (cb: any) => cb(manager));
+      qb.execute.mockResolvedValue({});
     });
 
-    it('inserts keys when provided', async () => {
-      const key = {
-        toStringRaw: jest.fn(() => 'raw-key'),
-      } as unknown as PublicKey;
+    it('deletes existing rows and inserts the new keys in one transaction', async () => {
+      await helper.replaceKeys(keyEntity, 1, 'account', [makeKey('raw-key')]);
 
-      qb.execute.mockResolvedValue({});
+      expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(manager.delete).toHaveBeenCalledWith(keyEntity, { accountId: 1 });
+      expect(qb.values).toHaveBeenCalledWith([{ account: { id: 1 }, publicKey: 'raw-key' }]);
+      expect(qb.execute).toHaveBeenCalled();
+    });
 
-      await helper.insertKeys(keyEntity, 1, 'account', [key]);
+    it('deletes existing rows and inserts nothing when the key set is empty', async () => {
+      await helper.replaceKeys(keyEntity, 1, 'account', []);
 
-      expect(qb.values).toHaveBeenCalledWith([
-        {
-          account: { id: 1 },
-          publicKey: 'raw-key',
-        },
-      ]);
+      expect(manager.delete).toHaveBeenCalledWith(keyEntity, { accountId: 1 });
+      expect(manager.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('deletes before inserting', async () => {
+      const order: string[] = [];
+      manager.delete.mockImplementation(async () => { order.push('delete'); });
+      qb.execute.mockImplementation(async () => { order.push('insert'); });
+
+      await helper.replaceKeys(keyEntity, 1, 'account', [makeKey('raw-key')]);
+
+      expect(order).toEqual(['delete', 'insert']);
     });
   });
 });
