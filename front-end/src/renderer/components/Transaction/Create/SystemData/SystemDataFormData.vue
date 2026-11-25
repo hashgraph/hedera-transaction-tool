@@ -40,20 +40,10 @@ const buttonItems: ButtonGroupItem<TargetType>[] = [
 const newFileOrContractId = computed(() => {
   let result: FileId | ContractId | null;
   if (targetType.value === 'file') {
-    if (fileIdReport.value.status === InputStatus.invalid) {
-      // File ID is invalid => we keep current value (if any)
-      result = props.data.fileOrContractId instanceof FileId ? props.data.fileOrContractId : null;
-    } else {
-      result = fileIdReport.value.value;
-    }
+    result = fileIdReport.value.status !== InputStatus.invalid ? fileIdReport.value.value : null;
   } else {
-    if (contractIdReport.value.status === InputStatus.invalid) {
-      // Contract ID is invalid => we keep current value (if any)
-      result =
-        props.data.fileOrContractId instanceof ContractId ? props.data.fileOrContractId : null;
-    } else {
-      result = contractIdReport.value.value;
-    }
+    result =
+      contractIdReport.value.status !== InputStatus.invalid ? contractIdReport.value.value : null;
   }
   return result;
 });

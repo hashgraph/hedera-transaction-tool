@@ -37,8 +37,7 @@ describe('SystemDataFormData.vue', () => {
 
     // 3) User inputs invalid file id 0.0.123a
     await wrapper.findComponent(FileIdInput).find('input').setValue('0.0.123a');
-    expect(systemData.fileOrContractId instanceof FileId).toBe(true);
-    expect(systemData.fileOrContractId?.toString()).toBe('0.0.123');
+    expect(systemData.fileOrContractId).toBe(null);
 
     // 4) User inputs file 0.0.1234
     await wrapper.findComponent(FileIdInput).find('input').setValue('0.0.1234');
@@ -61,8 +60,7 @@ describe('SystemDataFormData.vue', () => {
 
     // 3) User inputs invalid contract id 0.0.789a
     await wrapper.findComponent(ContractIdInput).find('input').setValue('0.0.789a');
-    expect(systemData.fileOrContractId instanceof ContractId).toBe(true);
-    expect(systemData.fileOrContractId?.toString()).toBe('0.0.789');
+    expect(systemData.fileOrContractId).toBe(null);
 
     // 4) User inputs contract 0.0.789
     await wrapper.findComponent(ContractIdInput).find('input').setValue('0.0.7891');
