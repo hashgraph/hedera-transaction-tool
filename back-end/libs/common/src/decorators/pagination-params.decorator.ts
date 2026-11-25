@@ -15,7 +15,7 @@ export const PaginationParams = createParamDecorator((_data, ctx: ExecutionConte
   const page = parseInt(req.query.page as string);
   const size = parseInt(req.query.size as string);
 
-  if (isNaN(page) || page <= 0 || isNaN(size) || size < 0) {
+  if (isNaN(page) || page <= 0 || isNaN(size) || size <= 0) {
     throw new BadRequestException(ErrorCodes.IPP);
   }
 
