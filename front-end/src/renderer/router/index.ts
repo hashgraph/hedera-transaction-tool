@@ -25,7 +25,6 @@ const AccountSetup = () => import('@renderer/pages/AccountSetup');
 const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab');
 const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
 const NotificationsTab = () => import('@renderer/pages/Settings/components/NotificationsTab.vue');
-const RestoreKey = () => import('@renderer/pages/RestoreKey');
 const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
 const ProfileTab = () => import('@renderer/pages/Settings/components/ProfileTab.vue');
 const LinkExistingAccount = () => import('@renderer/pages/Accounts/LinkExistingAccount');
@@ -61,7 +60,6 @@ const routes: RouteRecordRaw[] = [
   },
   { path: '/reviewer-groups', name: 'reviewerGroups', component: ReviewerGroups },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
-  { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },
   { path: '/migrate', name: 'migrate', component: Migrate },
   {
     path: '/migrate-recovery-phrase-hash',
