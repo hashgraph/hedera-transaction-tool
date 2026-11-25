@@ -160,13 +160,7 @@ const handleShowPrivateKey = async () => {
           ].includes(network.network),
         }"
       >
-        <span
-          v-if="user.isLoadingAccountsOf(props.keyInfo.publicKey)"
-          class="spinner-border spinner-border-sm"
-          role="status"
-          :data-testid="`spinner-account-${props.rowIndex}`"
-        ></span>
-        <template v-else>{{ accountCell }}</template>
+        {{ accountCell }}
       </span>
     </td>
     <td :data-testid="`cell-key-type-${props.rowIndex}`">

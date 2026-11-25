@@ -23,15 +23,12 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 import { safeAwait } from '@renderer/utils';
 import * as pks from '@renderer/services/publicKeyMappingService';
 import * as ush from '@renderer/utils/userStoreHelpers';
-import { createLogger } from '@renderer/utils/logger';
 import { getVersionStatusForOrg, resetVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
 import { AppCache } from '@renderer/caches/AppCache';
 import { reconnectOrganization } from '@renderer/services/organization';
-
-const logger = createLogger('renderer.store.user');
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
@@ -48,9 +45,6 @@ const useUserStore = defineStore('user', () => {
   /* State */
   /** Keys */
   const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
-  const isLoadingAccounts = ref(false);
-  const loadingAccountKeys = ref<string[]>([]);
-  let accountsRefetchId = 0;
   const recoveryPhrase: Ref<RecoveryPhrase|null> = ref(null);
   const keyPairs = ref<KeyPair[]>([]);
   const mnemonics = ref<Mnemonic[]>([]);
@@ -145,60 +139,15 @@ const useUserStore = defineStore('user', () => {
     }
   };
 
-  /**
-   * Reloads the accounts of every key, or only those of `publicKey` when given
-   * (the other keys' accounts are left as they are).
-   */
-  const refetchAccounts = async (publicKey?: string) => {
-    if (publicKey !== undefined) {
-      await refetchAccountsOfKey(publicKey);
-      return;
-    }
-
-    // Only the latest refetch may publish its result, as refetches can overlap
-    const refetchId = ++accountsRefetchId;
-    isLoadingAccounts.value = true;
+  const refetchAccounts = async () => {
     publicKeyToAccounts.value = [];
-
-    try {
-      const result = await ush.getPublicKeyToAccounts(
-        [],
-        keyPairs.value,
-        network.mirrorNodeBaseURL,
-        accountByKeyCache,
-      );
-      if (refetchId === accountsRefetchId) {
-        publicKeyToAccounts.value = result;
-      }
-    } finally {
-      if (refetchId === accountsRefetchId) {
-        isLoadingAccounts.value = false;
-      }
-    }
+    publicKeyToAccounts.value = await ush.getPublicKeyToAccounts(
+      publicKeyToAccounts.value,
+      keyPairs.value,
+      network.mirrorNodeBaseURL,
+      accountByKeyCache,
+    );
   };
-
-  const refetchAccountsOfKey = async (publicKey: string) => {
-    loadingAccountKeys.value.push(publicKey);
-
-    try {
-      const [entry] = await ush.getPublicKeyToAccounts(
-        [],
-        keyPairs.value.filter(kp => kp.public_key === publicKey),
-        network.mirrorNodeBaseURL,
-        accountByKeyCache,
-      );
-      publicKeyToAccounts.value = [
-        ...publicKeyToAccounts.value.filter(pkToAcc => pkToAcc.publicKey !== publicKey),
-        ...(entry ? [entry] : []),
-      ];
-    } finally {
-      const index = loadingAccountKeys.value.indexOf(publicKey);
-      if (index !== -1) loadingAccountKeys.value.splice(index, 1);
-    }
-  };
-
-  const isLoadingAccountsOf = (publicKey: string) =>
-    isLoadingAccounts.value || loadingAccountKeys.value.includes(publicKey);
 
   const refetchKeys = async () => {
     keyPairs.value = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
@@ -220,16 +169,7 @@ const useUserStore = defineStore('user', () => {
   ) => {
     await ush.storeKeyPair(keyPair, mnemonic, password, encrypted);
     await refetchKeys();
-    // Not awaited: it queries the mirror node and would keep callers waiting. Only the new key's
-    // accounts are fetched; isLoadingAccountsOf tells consumers that they are still loading.
-    safeAwait(refetchAccounts(keyPair.public_key)).then(({ error }) => {
-      if (error) {
-        logger.error('Failed to refetch the accounts of the stored key', {
-          publicKey: keyPair.public_key,
-          error,
-        });
-      }
-    });
+    await refetchAccounts();
   };
 
   const storePublicKeyMapping = async (publicKey: string, nickname: string) => {
@@ -335,7 +275,6 @@ const useUserStore = defineStore('user', () => {
   const exports = {
     keyPairs,
     publicKeyToAccounts,
-    isLoadingAccountsOf,
     publicKeysToAccountsFlattened,
     recoveryPhrase,
     personal,

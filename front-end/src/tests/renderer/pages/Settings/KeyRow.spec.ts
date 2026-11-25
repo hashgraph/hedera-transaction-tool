@@ -6,7 +6,6 @@ import { PrivateKey } from '@hiero-ledger/sdk';
 const mocks = vi.hoisted(() => ({
   user: {
     publicKeyToAccounts: [] as { publicKey: string; accounts: { account: string }[] }[],
-    isLoadingAccountsOf: vi.fn((_publicKey: string) => false),
     selectedOrganization: null,
     personal: { id: 'user-1' },
   },
@@ -58,7 +57,6 @@ describe('KeyRow.vue', () => {
   beforeEach(() => {
     mocks.user.publicKeyToAccounts = [];
     mocks.user.selectedOrganization = null;
-    mocks.user.isLoadingAccountsOf.mockReset().mockReturnValue(false);
   });
 
   describe('key type', () => {
@@ -121,46 +119,6 @@ describe('KeyRow.vue', () => {
       const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
 
       expect(cell(wrapper, 'account').text()).toBe('N/A');
-    });
-  });
-
-  describe('account loading spinner', () => {
-    test('shows a spinner instead of the account while the key accounts are loading', () => {
-      mocks.user.publicKeyToAccounts = [
-        { publicKey: ed25519, accounts: [{ account: '0.0.1001' }] },
-      ];
-      mocks.user.isLoadingAccountsOf.mockReturnValue(true);
-      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null), 2);
-
-      expect(wrapper.find('[data-testid="spinner-account-2"]').exists()).toBe(true);
-      expect(cell(wrapper, 'account', 2).text()).toBe('');
-    });
-
-    test('asks about its own public key only', () => {
-      mountRow(new KeyInfo(ecdsa, keyPair(ecdsa), null));
-
-      expect(mocks.user.isLoadingAccountsOf).toHaveBeenCalledWith(ecdsa);
-      expect(mocks.user.isLoadingAccountsOf).not.toHaveBeenCalledWith(ed25519);
-    });
-
-    test('only the row of the loading key shows a spinner', () => {
-      mocks.user.isLoadingAccountsOf.mockImplementation((publicKey: string) => publicKey === ecdsa);
-
-      const loading = mountRow(new KeyInfo(ecdsa, keyPair(ecdsa), null), 0);
-      const settled = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null), 1);
-
-      expect(loading.find('[data-testid="spinner-account-0"]').exists()).toBe(true);
-      expect(settled.find('[data-testid="spinner-account-1"]').exists()).toBe(false);
-    });
-
-    test('shows the account once loading is finished', () => {
-      mocks.user.publicKeyToAccounts = [
-        { publicKey: ed25519, accounts: [{ account: '0.0.1001' }] },
-      ];
-      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
-
-      expect(wrapper.find('[data-testid="spinner-account-0"]').exists()).toBe(false);
-      expect(cell(wrapper, 'account').text()).toContain('0.0.1001');
     });
   });
 });

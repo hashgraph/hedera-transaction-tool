@@ -156,8 +156,6 @@ export class SettingsPage extends BasePage {
   }
 
   async getRowDataByIndex(index: number) {
-    // The account cell shows a spinner while accounts load from the mirror node
-    await this.isElementHidden(`spinner-account-${index}`, null, this.LONG_TIMEOUT);
     return {
       index: await this.getText(this.indexCellSelectorPrefix + index),
       nickname: await this.getText(this.nicknameCellSelectorPrefix + index),
