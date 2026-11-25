@@ -688,8 +688,8 @@ importers:
         specifier: 0.3.1
         version: 0.3.1(socket.io-adapter@2.5.8(supports-color@8.1.1))(supports-color@8.1.1)
       nodemailer:
-        specifier: 10.5.0
-        version: 10.5.0
+        specifier: 10.6.1
+        version: 10.6.1
       socket.io:
         specifier: 4.8.4
         version: 4.8.4(supports-color@8.1.1)
@@ -6913,8 +6913,8 @@ packages:
     resolution: {integrity: sha512-OmO8+GM1JUZqXET720VrJCwkjUCXmCMQm0Z3UDDRbfNLHS4NEAvY60j5jiFv0tkKw2PNNlqOLhahVmwJIOLDIQ==}
     engines: {node: '>=18'}
 
-  nodemailer@10.5.0:
-    resolution: {integrity: sha512-L/w/HH5MqpzMDuZD7fQdt/+KqymuvrpaApaIjAH2XA3ILePwlcvXCVVvP75xVrXCEt2ggK2marrrHHFB5Qu0kA==}
+  nodemailer@10.6.1:
+    resolution: {integrity: sha512-d7kfFfS/tR4Aca+SBvRaQ+MXKNv7d2JiRe5TxaRcFT/kYMh4GGPnW9aKksTIEvyEbA7d/7HYWE4YPDEHxzJj/g==}
     engines: {node: '>=20.0.0'}
 
   nopt@10.0.1:
@@ -15789,7 +15789,7 @@ snapshots:
 
   node-releases@2.0.60: {}
 
-  nodemailer@10.5.0: {}
+  nodemailer@10.6.1: {}
 
   nopt@10.0.1:
     dependencies:
