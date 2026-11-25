@@ -34,30 +34,6 @@ test.describe('Settings keys import tests @local-basic', () => {
     expect(publicKey).toBeTruthy();
   });
 
-  test('Verify user can import ED25519 keys', async () => {
-    await suite.settingsPage.clickOnKeysTab();
-    await suite.settingsPage.clickOnImportButton();
-    await suite.settingsPage.clickOnED25519DropDown();
-
-    const { privateKey } = generateEd25519KeyPair();
-    await suite.loginPage.waitForToastToDisappear();
-    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Test-ED25519-Import');
-
-    const toastMessage = await suite.registrationPage.getToastMessage();
-    expect(toastMessage).toBe('ED25519 private key imported successfully');
-
-    const rowCount = await suite.settingsPage.getKeyRowCount();
-    const lastRowIndex = rowCount - 1;
-    const { index, nickname, accountID, keyType, publicKey } =
-      await suite.settingsPage.getRowDataByIndex(lastRowIndex);
-
-    expect(index).toBe('N/A');
-    expect(nickname!.trim()).toBe('Test-ED25519-Import');
-    expect(accountID).toBeTruthy();
-    expect(keyType).toBe('ED25519');
-    expect(publicKey).toBeTruthy();
-  });
-
   test('Verify user can import an encrypted private key', async () => {
     // Generate private key and encrypt it with a password
     const password = 'encrypted-key-password';

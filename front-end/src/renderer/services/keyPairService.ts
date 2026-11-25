@@ -206,6 +206,14 @@ export const detectPrivateKeyType = (privateKey: string): 'ED25519' | 'ECDSA' | 
 
   try {
     const instance = PrivateKey.fromStringDer(hex);
+
+    // The SDK is lenient: for 48 or 50 bytes of anything (e.g. a DER key with a corrupted prefix)
+    // it falls back to treating the last 32 bytes as an ECDSA key. A genuine key always encodes
+    // back to exactly the same string.
+    if (instance.toStringDer() !== hex.toLowerCase()) {
+      return null;
+    }
+
     return instance.type === 'secp256k1' ? 'ECDSA' : 'ED25519';
   } catch {
     return null;

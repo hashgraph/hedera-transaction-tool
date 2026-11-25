@@ -12,10 +12,9 @@ export class SettingsPage extends BasePage {
   // Inputs
   indexInputSelector = 'input-index';
   nicknameInputSelector = 'input-nickname';
-  ed25519PrivateKeyInputSelector = 'input-ed25519-private-key';
-  ed25519PNicknameInputSelector = 'input-ed25519-private-key-nickname';
-  ecdsaPrivateKeyInputSelector = 'input-ecdsa-private-key';
-  ecdsaNicknameInputSelector = 'input-ecdsa-private-key-nickname';
+  privateKeyInputSelector = 'input-private-key';
+  privateKeyNicknameInputSelector = 'input-private-key-nickname';
+  privateKeyTypeSelectSelector = 'select-private-key-type';
   currentPasswordInputSelector = 'input-current-password';
   newPasswordInputSelector = 'input-new-password';
   defaultMaxTransactionFeeInputSelector = 'input-default-max-transaction-fee';
@@ -47,18 +46,15 @@ export class SettingsPage extends BasePage {
   darkTabButtonSelector = 'tab-appearance-dark';
   lightTabButtonSelector = 'tab-appearance-light';
   systemTabButtonSelector = 'tab-appearance-system';
-  restoreButtonSelector = 'button-restore';
-  continueIndexButtonSelector = 'button-continue-index';
-  continueNicknameButtonSelector = 'button-continue-nickname';
+  recoveryPhraseLinkSelector = 'link-recovery-phrase';
   continuePhraseButtonSelector = 'button-continue-phrase';
+  saveRecoveryKeyButtonSelector = 'button-save-recovery-key';
   continueEncryptPasswordButtonSelector = 'button-continue-encrypt-password';
   cancelEncryptPasswordButtonSelector = 'button-cancel-encrypt-password';
-  importButtonSelector = 'button-restore-dropdown';
-  ed25519ImportLinkSelector = 'link-import-ed25519-key';
-  ecdsaImportLinkSelector = 'link-import-ecdsa-key';
+  importButtonSelector = 'button-add-key-dropdown';
+  privateKeyImportLinkSelector = 'link-import-private-key';
   encryptedKeyImportLinkSelector = 'link-import-encrypted-key';
-  ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
-  ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
+  privateKeyImportButtonSelector = 'button-private-key-import';
   decryptMainPrivateKeyButtonSelector = 'span-show-modal-0';
   deleteKeyPairButton = 'button-delete-keypair-confirm';
   deleteKeyButtonPrefix = 'button-delete-key-';
@@ -373,7 +369,8 @@ export class SettingsPage extends BasePage {
     let attempt = 0;
 
     while (attempt < maxRetries) {
-      await this.click(this.restoreButtonSelector);
+      await this.click(this.importButtonSelector);
+      await this.click(this.recoveryPhraseLinkSelector);
       if (await this.isElementVisible(this.continuePhraseButtonSelector)) {
         return;
       }
@@ -381,7 +378,7 @@ export class SettingsPage extends BasePage {
     }
 
     throw new Error(
-      `Failed to click on restore button and see continue button after ${maxRetries} attempts`,
+      `Failed to open the recovery phrase modal and see the next button after ${maxRetries} attempts`,
     );
   }
 
@@ -397,20 +394,16 @@ export class SettingsPage extends BasePage {
     await this.fill(this.indexInputSelector, index.toString());
   }
 
-  async clickOnIndexContinueButton(): Promise<void> {
-    await this.click(this.continueIndexButtonSelector);
-  }
-
   async fillInNickname(nickname: string): Promise<void> {
     await this.fill(this.nicknameInputSelector, nickname);
   }
 
-  async clickOnNicknameContinueButton(): Promise<void> {
-    await this.click(this.continueNicknameButtonSelector, null, this.LONG_TIMEOUT);
-  }
-
   async clickOnContinuePhraseButton(): Promise<void> {
     await this.click(this.continuePhraseButtonSelector);
+  }
+
+  async clickOnSaveRecoveryKeyButton(): Promise<void> {
+    await this.click(this.saveRecoveryKeyButtonSelector, null, this.LONG_TIMEOUT);
   }
 
   async clickOnLocalNodeTab(): Promise<void> {
@@ -462,11 +455,11 @@ export class SettingsPage extends BasePage {
   }
 
   async clickOnECDSADropDown(): Promise<void> {
-    await this.click(this.ecdsaImportLinkSelector);
+    await this.click(this.privateKeyImportLinkSelector);
   }
 
   async clickOnED25519DropDown(): Promise<void> {
-    await this.click(this.ed25519ImportLinkSelector);
+    await this.click(this.privateKeyImportLinkSelector);
   }
 
   async clickOnSelectAllKeys(): Promise<void> {
@@ -515,9 +508,7 @@ export class SettingsPage extends BasePage {
     nickname: string,
     expectModalToClose = true,
   ): Promise<void> {
-    await this.fill(this.ecdsaPrivateKeyInputSelector, privateKey);
-    await this.fill(this.ecdsaNicknameInputSelector, nickname);
-    await this.clickOnECDSAImportButton(expectModalToClose);
+    await this.importPrivateKey('ECDSA', privateKey, nickname, expectModalToClose);
   }
 
   async importED25519PrivateKey(
@@ -525,26 +516,33 @@ export class SettingsPage extends BasePage {
     nickname: string,
     expectModalToClose = true,
   ): Promise<void> {
-    await this.fill(this.ed25519PrivateKeyInputSelector, privateKey);
-    await this.fill(this.ed25519PNicknameInputSelector, nickname);
-    await this.clickOnED25519ImportButton(expectModalToClose);
+    await this.importPrivateKey('ED25519', privateKey, nickname, expectModalToClose);
   }
 
-  async clickOnECDSAImportButton(expectModalToClose = true): Promise<void> {
-    await this.click(this.ecdsaImportButtonSelector);
+  async importPrivateKey(
+    keyType: 'ED25519' | 'ECDSA',
+    privateKey: string,
+    nickname: string,
+    expectModalToClose = true,
+  ): Promise<void> {
+    // The type dropdown is hidden when the key type is already known (restoring a missing key)
+    await this.isElementVisible(this.privateKeyInputSelector);
     if (
-      expectModalToClose &&
-      !(await this.isElementHidden(this.ecdsaImportButtonSelector, null, this.LONG_TIMEOUT))
+      await this.isElementVisible(this.privateKeyTypeSelectSelector, null, this.getShortTimeout())
     ) {
-      throw new Error('Import modal did not close within 10 seconds');
+      await this.click(this.privateKeyTypeSelectSelector);
+      await this.click(`select-item-${keyType}`);
     }
+    await this.fill(this.privateKeyInputSelector, privateKey);
+    await this.fill(this.privateKeyNicknameInputSelector, nickname);
+    await this.clickOnPrivateKeyImportButton(expectModalToClose);
   }
 
-  async clickOnED25519ImportButton(expectModalToClose = true): Promise<void> {
-    await this.click(this.ed25519ImportButtonSelector);
+  async clickOnPrivateKeyImportButton(expectModalToClose = true): Promise<void> {
+    await this.click(this.privateKeyImportButtonSelector);
     if (
       expectModalToClose &&
-      !(await this.isElementHidden(this.ed25519ImportButtonSelector, null, this.LONG_TIMEOUT))
+      !(await this.isElementHidden(this.privateKeyImportButtonSelector, null, this.LONG_TIMEOUT))
     ) {
       throw new Error('Import modal did not close within 10 seconds');
     }

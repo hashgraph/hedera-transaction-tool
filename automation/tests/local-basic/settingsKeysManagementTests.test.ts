@@ -37,23 +37,6 @@ test.describe('Settings keys management tests @local-basic', () => {
     expect(await suite.settingsPage.getKeyRowCount()).toBe(initialRowCount);
   });
 
-  test('Verify duplicate private key import shows an error', async () => {
-    await suite.settingsPage.clickOnKeysTab();
-
-    const { privateKey } = generateEd25519KeyPair();
-    await suite.settingsPage.clickOnImportButton();
-    await suite.settingsPage.clickOnED25519DropDown();
-    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Duplicate-Import-Key');
-    await suite.loginPage.waitForToastToDisappear();
-
-    await suite.settingsPage.clickOnImportButton();
-    await suite.settingsPage.clickOnED25519DropDown();
-    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Duplicate-Import-Key-Again', false);
-
-    const toastMessage = await suite.registrationPage.getToastMessageByVariant('error');
-    expect(toastMessage).toContain('Key pair already exists');
-  });
-
   test('Verify user can change key nickname', async () => {
     const newNickname = 'testChangeNickname';
     await suite.settingsPage.clickOnKeysTab();

@@ -1,0 +1,166 @@
+// @vitest-environment happy-dom
+import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
+import { PrivateKey } from '@hiero-ledger/sdk';
+
+const mocks = vi.hoisted(() => ({
+  user: {
+    publicKeyToAccounts: [] as { publicKey: string; accounts: { account: string }[] }[],
+    isLoadingAccountsOf: vi.fn((_publicKey: string) => false),
+    selectedOrganization: null,
+    personal: { id: 'user-1' },
+  },
+}));
+
+vi.mock('@renderer/stores/storeUser', () => ({ default: () => mocks.user }));
+vi.mock('@renderer/stores/storeNetwork', () => ({ default: () => ({ network: 'testnet' }) }));
+vi.mock('@renderer/composables/usePersonalPassword', () => ({
+  default: () => ({ getPasswordAsync: vi.fn() }),
+}));
+vi.mock('@renderer/services/keyPairService', () => ({ decryptPrivateKey: vi.fn() }));
+vi.mock('@renderer/utils/ToastManager', () => ({
+  ToastManager: { inject: () => ({ success: vi.fn(), error: vi.fn() }) },
+}));
+
+import KeyRow from '@renderer/pages/Settings/components/KeysTab/components/KeyRow.vue';
+import { KeyInfo } from '@renderer/composables/useKeyManager';
+
+const ed25519 = PrivateKey.generateED25519().publicKey.toStringRaw();
+const ecdsa = PrivateKey.generateECDSA().publicKey.toStringRaw();
+
+const keyPair = (publicKey: string, overrides: Record<string, unknown> = {}) =>
+  ({
+    id: 'kp-1',
+    public_key: publicKey,
+    private_key: 'enc',
+    index: -1,
+    nickname: null,
+    secret_hash: null,
+    ...overrides,
+  }) as never;
+
+function mountRow(keyInfo: KeyInfo, rowIndex = 0) {
+  return mount(KeyRow, {
+    props: { keyInfo, checked: false, enableDelete: true, rowIndex },
+    global: {
+      stubs: {
+        AppButton: { template: '<button v-bind="$attrs"><slot /></button>' },
+        AppCheckBox: { template: '<input type="checkbox" />' },
+      },
+    },
+  });
+}
+
+const cell = (wrapper: ReturnType<typeof mountRow>, name: string, row = 0) =>
+  wrapper.find(`[data-testid="cell-${name}-${row}"]`);
+
+describe('KeyRow.vue', () => {
+  beforeEach(() => {
+    mocks.user.publicKeyToAccounts = [];
+    mocks.user.selectedOrganization = null;
+    mocks.user.isLoadingAccountsOf.mockReset().mockReturnValue(false);
+  });
+
+  describe('key type', () => {
+    test('shows ED25519 for an ED25519 key', () => {
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      expect(cell(wrapper, 'key-type').text()).toBe('ED25519');
+    });
+
+    test('shows ECDSA for an ECDSA key', () => {
+      const wrapper = mountRow(new KeyInfo(ecdsa, keyPair(ecdsa), null));
+
+      expect(cell(wrapper, 'key-type').text()).toBe('ECDSA');
+    });
+  });
+
+  describe('index and nickname', () => {
+    test('shows N/A as the index of a key that is not derived from a recovery phrase', () => {
+      const wrapper = mountRow(new KeyInfo(ecdsa, keyPair(ecdsa, { index: -1 }), null));
+
+      expect(cell(wrapper, 'index').text()).toBe('N/A');
+    });
+
+    test('shows the index of a key derived from a recovery phrase', () => {
+      const wrapper = mountRow(
+        new KeyInfo(ecdsa, keyPair(ecdsa, { index: 4, secret_hash: 'h' }), null),
+      );
+
+      expect(cell(wrapper, 'index').text()).toBe('4');
+    });
+
+    test('shows the nickname, or N/A when there is none', () => {
+      const named = mountRow(new KeyInfo(ed25519, keyPair(ed25519, { nickname: 'My key' }), null));
+      const unnamed = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      expect(cell(named, 'nickname').text()).toContain('My key');
+      expect(cell(unnamed, 'nickname').text()).toContain('N/A');
+    });
+  });
+
+  describe('account id', () => {
+    test('shows N/A when the key has no account', () => {
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      expect(cell(wrapper, 'account').text()).toBe('N/A');
+    });
+
+    test('shows the first account of the key', () => {
+      mocks.user.publicKeyToAccounts = [
+        { publicKey: ed25519, accounts: [{ account: '0.0.1001' }, { account: '0.0.1002' }] },
+      ];
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      expect(cell(wrapper, 'account').text()).toContain('0.0.1001');
+      expect(cell(wrapper, 'account').text()).not.toContain('0.0.1002');
+    });
+
+    test('ignores the accounts of other keys', () => {
+      mocks.user.publicKeyToAccounts = [{ publicKey: ecdsa, accounts: [{ account: '0.0.2001' }] }];
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      expect(cell(wrapper, 'account').text()).toBe('N/A');
+    });
+  });
+
+  describe('account loading spinner', () => {
+    test('shows a spinner instead of the account while the key accounts are loading', () => {
+      mocks.user.publicKeyToAccounts = [
+        { publicKey: ed25519, accounts: [{ account: '0.0.1001' }] },
+      ];
+      mocks.user.isLoadingAccountsOf.mockReturnValue(true);
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null), 2);
+
+      expect(wrapper.find('[data-testid="spinner-account-2"]').exists()).toBe(true);
+      expect(cell(wrapper, 'account', 2).text()).toBe('');
+    });
+
+    test('asks about its own public key only', () => {
+      mountRow(new KeyInfo(ecdsa, keyPair(ecdsa), null));
+
+      expect(mocks.user.isLoadingAccountsOf).toHaveBeenCalledWith(ecdsa);
+      expect(mocks.user.isLoadingAccountsOf).not.toHaveBeenCalledWith(ed25519);
+    });
+
+    test('only the row of the loading key shows a spinner', () => {
+      mocks.user.isLoadingAccountsOf.mockImplementation((publicKey: string) => publicKey === ecdsa);
+
+      const loading = mountRow(new KeyInfo(ecdsa, keyPair(ecdsa), null), 0);
+      const settled = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null), 1);
+
+      expect(loading.find('[data-testid="spinner-account-0"]').exists()).toBe(true);
+      expect(settled.find('[data-testid="spinner-account-1"]').exists()).toBe(false);
+    });
+
+    test('shows the account once loading is finished', () => {
+      mocks.user.publicKeyToAccounts = [
+        { publicKey: ed25519, accounts: [{ account: '0.0.1001' }] },
+      ];
+      const wrapper = mountRow(new KeyInfo(ed25519, keyPair(ed25519), null));
+
+      expect(wrapper.find('[data-testid="spinner-account-0"]').exists()).toBe(false);
+      expect(cell(wrapper, 'account').text()).toContain('0.0.1001');
+    });
+  });
+});

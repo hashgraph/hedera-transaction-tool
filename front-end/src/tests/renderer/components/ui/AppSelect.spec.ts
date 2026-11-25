@@ -34,6 +34,14 @@ describe('AppSelect.vue', () => {
   const item = (wrapper: ReturnType<typeof mountSelect>, value: string) =>
     wrapper.find(`[data-testid="select-item-${value}"]`);
 
+  // Inside a <form>, a button without a type is a submit button; as the first one it would
+  // catch Enter in the form's inputs and open the dropdown instead of submitting.
+  test('the toggle is a non-submit button, so it never takes over Enter in a form', () => {
+    const wrapper = mountSelect();
+
+    expect(toggle(wrapper).attributes('type')).toBe('button');
+  });
+
   test('shows the label of the selected item on the toggle', () => {
     const wrapper = mountSelect({ value: 'second' });
 
