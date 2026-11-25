@@ -8,6 +8,8 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
+import type { KeyType } from '@renderer/types';
+
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 
 import {
@@ -99,6 +101,7 @@ const storeKeys = async (
     privateKey: string;
     index: number;
     mnemonicHash: string;
+    keyType: KeyType;
   }[],
 ) => {
   assertUserLoggedIn(user.personal);
@@ -121,7 +124,7 @@ const storeKeys = async (
           index: key.index,
           private_key: key.privateKey,
           public_key: key.publicKey,
-          type: 'ED25519',
+          type: key.keyType,
           organization_id: user.selectedOrganization.id,
           organization_user_id: user.selectedOrganization.userId,
           secret_hash: key.mnemonicHash,

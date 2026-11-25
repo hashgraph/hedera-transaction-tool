@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { KeyPair } from '@prisma/client';
-import type { ConnectedOrganization } from '@renderer/types';
+import { KeyType, type ConnectedOrganization } from '@renderer/types';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -17,6 +17,7 @@ import { restorePrivateKey } from '@renderer/services/keyPairService';
 import {
   assertUserLoggedIn,
   getErrorMessage,
+  getPublicKeyAndType,
   getWidthOfElementWithText,
   isLoggedInOrganization,
   restoreOrganizationKeys,
@@ -59,17 +60,28 @@ const keys = ref<
     index: number;
     mnemonicHash: string;
     encrypted: boolean;
+    keyType: KeyType;
   }[]
 >([]);
 
+/* Computed */
+// All restored keys are shown as the first one; a new account's default key is ED25519
+const displayedKeyType = computed(() => keys.value[0]?.keyType ?? KeyType.ED25519);
+
 /* Misc Functions */
-const addKeyToRestored = async (index: number, mnemonicHash: string, veirificationKey?: string) => {
+const addKeyToRestored = async (
+  index: number,
+  mnemonicHash: string,
+  veirificationKey?: string,
+  keyType = KeyType.ED25519,
+) => {
   const key = {
     publicKey: '',
     privateKey: '',
     index,
     mnemonicHash,
     encrypted: false,
+    keyType,
   };
   try {
     if (user.recoveryPhrase) {
@@ -77,7 +89,7 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
         user.recoveryPhrase.words,
         '',
         index,
-        'ED25519',
+        keyType,
       );
       key.publicKey = restoredPrivateKey.publicKey.toStringRaw();
       key.privateKey = restoredPrivateKey.toStringRaw();
@@ -90,16 +102,14 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
     if (key.publicKey !== '') {
       if (veirificationKey && veirificationKey !== key.publicKey) {
         throw new Error(
-          'Verification key does not match the restored key, ensure that the key type is ED25519',
+          `Verification key does not match the restored key, ensure that the key type is ${keyType}`,
         );
       }
 
       keys.value.push(key);
     }
   } catch (error) {
-    toastManager.error(
-      getErrorMessage(error, `Restoring key at index: ${index} failed`),
-    );
+    toastManager.error(getErrorMessage(error, `Restoring key at index: ${index} failed`));
   }
 };
 
@@ -114,7 +124,12 @@ const restoreForExistingKey = async (key: KeyPair) => {
   if (!key.secret_hash) {
     throw new Error('(BUG) Recovery phrase is not set on the existing key pair');
   }
-  await addKeyToRestored(key.index, key.secret_hash, key.public_key);
+  await addKeyToRestored(
+    key.index,
+    key.secret_hash,
+    key.public_key,
+    getPublicKeyAndType(key.public_key).keyType,
+  );
 };
 
 const restoreForOrganization = async (organization: ConnectedOrganization) => {
@@ -182,7 +197,7 @@ const handleSave = async () => {
       index: key.index,
       public_key: key.publicKey,
       private_key: key.privateKey,
-      type: 'ED25519',
+      type: key.keyType,
       organization_id: null,
       organization_user_id: null,
       secret_hash: key.mnemonicHash,
@@ -254,12 +269,12 @@ defineExpose({
     </div>
     <div class="form-group w-25 mt-5">
       <label data-testid="label-key-type" class="form-label">Key Type</label>
-      <AppInput data-testid="input-key-type" model-value="ED25519" readonly />
+      <AppInput data-testid="input-key-type" :model-value="displayedKeyType" readonly />
     </div>
     <template v-if="keys.length > 0">
       <div class="form-group mt-5">
         <label data-testid="label-private-key" class="form-label"
-          >ED25519 Private Key
+          >{{ displayedKeyType }} Private Key
           <span v-if="selectedPersonalKeyPair" class="text-pink">Encrypted</span></label
         >
         <p class="text-break text-secondary">
@@ -277,7 +292,9 @@ defineExpose({
         </p>
       </div>
       <div class="form-group mt-4">
-        <label data-testid="label-public-key" class="form-label">ED25519 Public Key</label>
+        <label data-testid="label-public-key" class="form-label"
+          >{{ displayedKeyType }} Public Key</label
+        >
         <p data-testid="p-show-public-key" class="text-break text-secondary">
           {{ keys[0].publicKey }}
         </p>

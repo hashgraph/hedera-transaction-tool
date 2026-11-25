@@ -66,6 +66,7 @@ describe('restoreOrganizationKeys - key type', () => {
         index: 3,
         mnemonicHash: 'stored-hash',
         encrypted: false,
+        keyType: 'ECDSA',
       },
     ]);
   });
@@ -83,6 +84,7 @@ describe('restoreOrganizationKeys - key type', () => {
 
     expect(restorePrivateKey).toHaveBeenCalledWith(['w1', 'w2'], '', 0, 'ED25519');
     expect(keys).toHaveLength(1);
+    expect(keys[0].keyType).toBe('ED25519');
   });
 
   test('picks the type per key when an organization has both types', async () => {
@@ -104,6 +106,7 @@ describe('restoreOrganizationKeys - key type', () => {
     ]);
     expect(failedRestoreMessages).toEqual([]);
     expect(keys.map(k => k.index)).toEqual([0, 1]);
+    expect(keys.map(k => k.keyType)).toEqual(['ED25519', 'ECDSA']);
   });
 
   test('reports a mismatch when the derived key is not the uploaded one', async () => {
