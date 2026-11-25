@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
+import type { ComponentPublicInstance } from 'vue';
 import { AccountId, Hbar } from '@hiero-ledger/sdk';
 
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
@@ -24,14 +25,15 @@ const AppHbarInputStub = {
   template: '<div />',
 };
 
+type InputWrapper = VueWrapper<ComponentPublicInstance<{ modelValue: unknown }>>;
+
 /* Fixtures */
-const baseData = (overrides: Partial<ApproveHbarAllowanceData> = {}): ApproveHbarAllowanceData =>
-  ({
-    ownerAccountId: '',
-    spenderAccountId: '',
-    amount: new Hbar(0),
-    ...overrides,
-  });
+const baseData = (overrides: Partial<ApproveHbarAllowanceData> = {}): ApproveHbarAllowanceData => ({
+  ownerAccountId: '',
+  spenderAccountId: '',
+  amount: new Hbar(0),
+  ...overrides,
+});
 
 const mountForm = (
   props: Partial<{
@@ -55,11 +57,11 @@ const mountForm = (
   });
 
 const owner = (w: ReturnType<typeof mountForm>) =>
-  w.findComponent('[data-testid="input-owner-account"]');
+  w.findComponent('[data-testid="input-owner-account"]') as InputWrapper;
 const spender = (w: ReturnType<typeof mountForm>) =>
-  w.findComponent('[data-testid="input-spender-account"]');
+  w.findComponent('[data-testid="input-spender-account"]') as InputWrapper;
 const amount = (w: ReturnType<typeof mountForm>) =>
-  w.findComponent('[data-testid="input-allowance-amount"]');
+  w.findComponent('[data-testid="input-allowance-amount"]') as InputWrapper;
 
 describe('ApproveHbarAllowanceFormData', () => {
   test('emits update:data with a formatted owner id, dropping any checksum suffix', async () => {
@@ -138,8 +140,8 @@ describe('ApproveHbarAllowanceFormData', () => {
     const wrapper = mountForm({
       spenderInfo: { accountId: AccountId.fromString('0.0.22'), key: null } as IAccountInfoParsed,
       ownerAllowances: [
-        { spender: '0.0.99', amount: Hbar.from(1).toTinybars().toNumber() },
-        { spender: '0.0.22', amount: Hbar.from(7).toTinybars().toNumber() },
+        { spender: '0.0.99', amount: new Hbar(1).toTinybars().toNumber() },
+        { spender: '0.0.22', amount: new Hbar(7).toTinybars().toNumber() },
       ] as unknown as CryptoAllowance[],
     });
 
