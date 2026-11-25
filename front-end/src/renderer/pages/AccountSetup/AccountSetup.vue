@@ -15,7 +15,7 @@ import { isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
-import GenerateOrImport from './components/GenerateOrImport.vue';
+import RecoveryPhraseStep from './components/RecoveryPhraseStep.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
@@ -155,7 +155,7 @@ onBeforeRouteLeave(async () => {
 
         <!-- Step 2 -->
         <template v-else-if="currentStep === 'recoveryPhrase'">
-          <GenerateOrImport
+          <RecoveryPhraseStep
             v-model:selectedPersonalKeyPair="selectedPersonalKeyPair"
             :handle-next="handleNext"
           />

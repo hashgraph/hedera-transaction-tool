@@ -13,6 +13,7 @@ import type {
   OrganizationTokens,
   OrganizationActiveServer,
   OrganizationLoaded,
+  KeyType,
 } from '@renderer/types';
 
 import { Prisma } from '@prisma/client';
@@ -45,7 +46,7 @@ import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 import { createLogger } from '@renderer/utils/logger';
 
 import { safeAwait } from './safeAwait';
-import { getErrorMessage, throwError } from '.';
+import { getErrorMessage, getPublicKeyAndType, throwError } from '.';
 import * as pks from '@renderer/services/publicKeyMappingService';
 
 import type { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
@@ -502,6 +503,7 @@ export const restoreOrganizationKeys = async (
     index: number;
     mnemonicHash: string;
     encrypted: boolean;
+    keyType: KeyType;
   }[] = [];
 
   const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
@@ -523,12 +525,14 @@ export const restoreOrganizationKeys = async (
         organizationKey.mnemonicHash &&
         organizationKey.index != null
       ) {
+        const { keyType } = getPublicKeyAndType(organizationKey.publicKey);
         const key = {
           publicKey: '',
           privateKey: '',
           index: organizationKey.index,
           mnemonicHash: organizationKey.mnemonicHash,
           encrypted: false,
+          keyType,
         };
 
         if (organizationKey.mnemonicHash === alreadyUploadedHash) {
@@ -536,7 +540,7 @@ export const restoreOrganizationKeys = async (
             recoveryPhrase.words,
             '',
             organizationKey.index,
-            'ED25519',
+            keyType,
           );
           key.publicKey = privateKey.publicKey.toStringRaw();
           key.privateKey = privateKey.toStringRaw();

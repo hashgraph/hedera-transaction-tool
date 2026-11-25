@@ -38,14 +38,6 @@ test.describe('Settings keys basic action tests @local-basic', () => {
     expect(toastMessage).toBe('Private Key copied successfully');
   });
 
-  test('Verify user can restore key', async () => {
-    await suite.settingsPage.clickOnKeysTab();
-    await restoreKeyFromSettings(suite.settingsPage, suite.registrationPage, suite.loginPage, {
-      expectSuccessToast: true,
-    });
-    await suite.settingsPage.incrementIndex();
-  });
-
   test('Verify user can delete key', async () => {
     await suite.settingsPage.clickOnKeysTab();
     const rowCountBeforeRestore = await suite.settingsPage.getKeyRowCount();
@@ -72,8 +64,8 @@ test.describe('Settings keys basic action tests @local-basic', () => {
       suite.registrationPage,
       suite.loginPage,
       {
+        expectSuccessToast: true,
         waitForToastAfterSave: true,
-        waitForToastBeforeNickname: false,
       },
     );
 

@@ -136,18 +136,27 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 3.2.7  | User can delete a single key pair                                                              | Yes       | Verify user can delete key                                             |
 | 3.2.8  | Key row count decreases after deletion                                                         | Yes       | Verify user can delete key                                             |
 | 3.2.9  | User can select multiple keys and bulk delete                                                  | Yes       | Verify user can select multiple keys and bulk delete                   |
-| 3.2.10 | User can generate a new key from recovery phrase (index + nickname flow)                       | Yes       | Verify user can restore key                                            |
+| 3.2.10 | User can generate a new key from recovery phrase (index + nickname flow)                       | Yes       | Verify user restored key pair is saved in the local database; `RecoveryPhraseKeyModal.spec.ts` (derives and stores the key at the chosen index and key type) |
 | 3.2.11 | Generated key pair is persisted in the database                                                | Yes       | Verify user restored key pair is saved in the local database           |
-| 3.2.12 | User can import ECDSA private key with nickname                                                | Yes       | Verify user can import ECDSA key                                       |
-| 3.2.13 | User can import ED25519 private key with nickname                                              | Yes       | Verify user can import ED25519 keys                                    |
-| 3.2.14 | Imported key shows correct key type                                                            | Yes       | Verify user can import ECDSA key / Verify user can import ED25519 keys |
+| 3.2.12 | User can import ECDSA private key with nickname                                                | Yes       | Verify user can import ECDSA key; `ImportExternalPrivateKeyModal.spec.ts` (stores the key with its type and nickname) |
+| 3.2.13 | User can import ED25519 private key with nickname                                              | Yes as Component Test | `ImportExternalPrivateKeyModal.spec.ts` › importing (stores a DER or raw ED25519 key with the selected or detected type); the same flow is exercised end to end by the ECDSA import test and by the tests that import ED25519 keys as setup |
+| 3.2.14 | Imported key shows correct key type                                                            | Yes       | Verify user can import ECDSA key; `KeyRow.spec.ts` › key type (ED25519 and ECDSA) |
 | 3.2.15 | User can import encrypted private key                                                          | No        |                                                                        |
 | 3.2.16 | Missing keys (org only) show restore button                                                    | Yes       | Verify user can restore missing keys when doing account recovery       |
 | 3.2.17 | User can restore missing key from recovery phrase                                              | Yes       | Verify user can restore missing keys when doing account recovery       |
 | 3.2.18 | User can import external private key for missing key                                           | No        |                                                                        |
-| 3.2.19 | Importing a private key that already exists in key store shows `Key pair already exists` error | Yes       | Verify duplicate private key import shows an error                     |
-| 3.2.20 | Importing a private key that doesn't match the expected public key shows error                 | N/A       | Not reachable via UI — the renderer error path lives in `ImportExternalPrivateKeyModal.vue:62`, which is only opened from `KeysTab.handleRestoreMissingKey` when `keyPair.index === undefined`. The org backend stores `UserKey.index` as `nullable: true`, so external missing keys come back over the wire as `index: null`, and the renderer's strict `!== undefined` check sends them to `RESTORE_MISSING_KEYS` (mnemonic flow) instead of the import modal |
+| 3.2.19 | Importing a private key that already exists in key store shows `Key pair already exists` error | Yes as Component Test | `useStoreExternalKeyPair.spec.ts` › rejects a key that is already stored; `ImportExternalPrivateKeyModal.spec.ts` › keeps the modal open and reports the error when storing fails |
+| 3.2.20 | Importing a private key that doesn't match the expected public key shows error                 | Yes as Component Test | `ImportExternalPrivateKeyModal.spec.ts` › restoring the key of a known public key (rejects a private key that does not belong to the public key). Not reachable through the UI end to end: the modal is only opened for a known public key from `KeysTab.handleRestoreMissingKey` when `keyPair.index === undefined`, but the org backend returns external missing keys with `index: null`, so they go to `RESTORE_MISSING_KEYS` instead |
 | 3.2.21 | Wrong app password when viewing private key shows `Failed to decrypt private key` error        | Yes       | Verify wrong app password blocks private key decryption                |
+| 3.2.22 | User can generate a random ED25519 or ECDSA key from the Add Key menu                         | Yes as Component Test | `GenerateKeyModal.spec.ts` › generating; `keyPairService.spec.ts` › generateRandomKeyPair; `AddKeyDropDown.spec.ts` |
+| 3.2.23 | Generate key remembers the last selected key type for the session (not persisted)              | Yes as Component Test | `GenerateKeyModal.spec.ts` › remembering the last selected key type (this session only) |
+| 3.2.24 | Pasted private key type is auto-detected when it is DER encoded                                | Yes as Component Test | `ImportExternalPrivateKeyModal.spec.ts` › auto-detecting the key type from the pasted key; `keyPairService.spec.ts` › detectPrivateKeyType |
+| 3.2.25 | A raw private key requires choosing a key type; a type that doesn't match the pasted key warns and blocks Import | Yes as Component Test | `ImportExternalPrivateKeyModal.spec.ts` › a raw key, whose type cannot be detected; a type that does not match the pasted key |
+| 3.2.26 | User can generate, regenerate and copy a recovery phrase in the Recovery Phrase modal          | Yes as Component Test | `RecoveryPhraseKeyModal.spec.ts` › generating; copying; `RecoveryPhraseInput.spec.ts` › setWords, pasting |
+| 3.2.27 | The existing nickname of a known recovery phrase is shown when the phrase is entered           | Yes as Component Test | `RecoveryPhraseKeyModal.spec.ts` › the nickname of a phrase that is already known |
+| 3.2.28 | User can create an ECDSA key from a recovery phrase, and organization restore re-derives it as ECDSA | Yes as Component Test | `RecoveryPhraseKeyModal.spec.ts` › saving; `userStoreHelpers.restoreOrganizationKeys.spec.ts` › key type |
+| 3.2.29 | Saving a key does not wait for its account ID, which shows a loading spinner until it arrives  | Yes as Component Test | `storeUser.accounts.spec.ts` (storeKey, refetchAccounts); `KeyRow.spec.ts` › account loading spinner |
+| 3.2.30 | Add Key menu offers Generate, Recovery Phrase, Import Private Key and Import Encrypted Keys    | Yes as Component Test | `AddKeyDropDown.spec.ts` › menu; opening the modals |
 
 ### 3.3 Public Keys Tab
 
@@ -970,7 +979,7 @@ Renderer tests live in `front-end/src/tests/renderer/pages/Migrate/`. The main-p
 | ------------------------------- | --------------- | ------------- | ----------------------- | ------- | ------- | -------- | ------- | ---------- | ----------------------- |
 | 1. Registration                 | 22              | 14            | 8                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 3. Settings                     | 78              | 60            | 15                       | 0       | 0       | 2        | 1       | 96%        | 96%                     |
+| 3. Settings                     | 87              | 58            | 27                       | 0       | 0       | 2        | 0       | 98%        | 98%                     |
 | 4. Transactions List            | 34              | 22            | 11                       | 0       | 1       | 0        | 0       | 97%        | 100%                    |
 | 5. Transaction Creation         | 101             | 92            | 7                        | 0       | 1       | 0        | 1       | 98%        | 99%                     |
 | 6. Transaction Details          | 26              | 24            | 1                        | 0       | 0       | 1        | 0       | 96%        | 96%                     |
@@ -984,16 +993,16 @@ Renderer tests live in `front-end/src/tests/renderer/pages/Migrate/`. The main-p
 | 14. Error Handling / Edge Cases | 17              | 10            | 4                        | 3       | 0       | 0        | 0       | 100%       | 100%                    |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
 | 16. User Migration              | 15              | 0             | 14                       | 0       | 0       | 1        | 0       | 93%        | 93%                     |
-| **Total**                       | **495**         | **365**       | **111**                  | **3**   | **5**   | **9**    | **2**   | **97%**    | **98%**                 |
+| **Total**                       | **504**         | **363**       | **123**                  | **3**   | **5**   | **9**    | **1**   | **97%**    | **98%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
 The migrated frontend package coverage currently comes from 2,517 Vitest renderer test cases (unit + component) across 185 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 111 + 3) / 495 = 96.77%`, rounded to `97%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(363 + 123 + 3) / 504 = 97.02%`, rounded to `97%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 111 + 3 + 5) / 495 = 97.78%`, rounded to `98%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(363 + 123 + 3 + 5) / 504 = 98.02%`, rounded to `98%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 

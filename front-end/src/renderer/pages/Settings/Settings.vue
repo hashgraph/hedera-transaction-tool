@@ -3,8 +3,6 @@ import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, ref, watch } from 'vue';
 
-import { RESTORE_KEY } from '@renderer/router';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, RouterView } from 'vue-router';
@@ -13,8 +11,7 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
-import AppButton from '@renderer/components/ui/AppButton.vue';
-import ImportDropDown from './components/ImportDropDown.vue';
+import AddKeyDropDown from './components/AddKeyDropDown.vue';
 import ImportPublicKey from './components/ImportPublicKey.vue';
 
 /* Stores */
@@ -108,14 +105,7 @@ watch(router.currentRoute, newRoute => {
           v-if="activeTabIndex === tabItems.findIndex(t => t.title === keysTitle)"
           class="d-flex gap-3"
         >
-          <AppButton
-            data-testid="button-restore"
-            color="secondary"
-            @click="$router.push({ name: RESTORE_KEY })"
-          >
-            Generate
-          </AppButton>
-          <ImportDropDown />
+          <AddKeyDropDown />
         </div>
         <div
           class="me-3"

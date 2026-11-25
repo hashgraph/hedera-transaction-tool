@@ -154,6 +154,26 @@ export const getKeyListLevels = (keyList: KeyList) => {
   return maxLevel + 1;
 };
 
+/**
+ * The SDK is lenient with 48 or 50 byte hex strings (the DER lengths of an ED25519 / ECDSA key):
+ * for anything of those lengths it falls back to using the last 32 bytes, which would store a
+ * different key than the one pasted. A genuine DER key always encodes back to the same string.
+ * Other inputs are left to the SDK, which rejects what it can't parse.
+ */
+export const isPrivateKeyWellFormed = (privateKey: string): boolean => {
+  const hex = privateKey.trim().replace(/^0x/i, '');
+
+  if (!/^[0-9a-f]+$/i.test(hex) || (hex.length !== 96 && hex.length !== 100)) {
+    return true;
+  }
+
+  try {
+    return PrivateKey.fromStringDer(hex).toStringDer() === hex.toLowerCase();
+  } catch {
+    return false;
+  }
+};
+
 export const generateExternalKeyPairFromString = (
   privateKey: string,
   type: 'ECDSA' | 'ED25519',
@@ -166,6 +186,10 @@ export const generateExternalKeyPairFromString = (
   nickname: string | null;
 } => {
   try {
+    if (!isPrivateKeyWellFormed(privateKey)) {
+      throw new Error('Malformed private key');
+    }
+
     let privateKeyInstance;
 
     switch (type) {
@@ -189,6 +213,51 @@ export const generateExternalKeyPairFromString = (
     logger.error('Failed to generate external key pair', { error });
     throw new Error(`Invalid ${type} Private key`);
   }
+};
+
+/**
+ * Determines the key type of a pasted private key string.
+ * Only DER-encoded keys carry the algorithm; raw hex keys are ambiguous and return null.
+ */
+export const detectPrivateKeyType = (privateKey: string): 'ED25519' | 'ECDSA' | null => {
+  const hex = privateKey.trim().replace(/^0x/i, '');
+
+  // A raw 32-byte key (64 hex chars) has no algorithm information, and the SDK
+  // would silently treat it as ED25519, so it must not be auto-detected.
+  if (!/^[0-9a-f]+$/i.test(hex) || hex.length <= 64) {
+    return null;
+  }
+
+  try {
+    const instance = PrivateKey.fromStringDer(hex);
+
+    // The SDK is lenient: for 48 or 50 bytes of anything (e.g. a DER key with a corrupted prefix)
+    // it falls back to treating the last 32 bytes as an ECDSA key. A genuine key always encodes
+    // back to exactly the same string.
+    if (instance.toStringDer() !== hex.toLowerCase()) {
+      return null;
+    }
+
+    return instance.type === 'secp256k1' ? 'ECDSA' : 'ED25519';
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Generates a random (non-recoverable) key pair of the given type.
+ */
+export const generateRandomKeyPair = (
+  type: 'ECDSA' | 'ED25519',
+  nickname: string,
+): { index: number; public_key: string; private_key: string; nickname: string | null } => {
+  const instance = type === 'ECDSA' ? PrivateKey.generateECDSA() : PrivateKey.generateED25519();
+  return {
+    nickname: nickname || null,
+    private_key: instance.toStringRaw(),
+    public_key: instance.publicKey.toStringRaw(),
+    index: -1,
+  };
 };
 
 function flattenComplexKey(

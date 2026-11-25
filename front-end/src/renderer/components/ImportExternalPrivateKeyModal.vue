@@ -1,35 +1,36 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
-
-import { Prisma } from '@prisma/client';
+import { computed, reactive, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useContactsStore from '@renderer/stores/storeContacts';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useStoreExternalKeyPair from '@renderer/composables/useStoreExternalKeyPair';
 
 import {
+  detectPrivateKeyType,
   generateExternalKeyPairFromString,
+  isPrivateKeyWellFormed,
   verifyKeyPair,
 } from '@renderer/services/keyPairService';
 
-import {
-  assertUserLoggedIn,
-  getErrorMessage,
-  isLoggedInOrganization,
-  safeAwait,
-  safeDuplicateUploadKey,
-} from '@renderer/utils';
+import { assertUserLoggedIn, getErrorMessage } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppSelect from '@renderer/components/ui/AppSelect.vue';
+
+type KeyTypeName = 'ED25519' | 'ECDSA';
+
+const logger = createLogger('renderer.component.importExternalPrivateKeyModal');
 
 /* Props */
 const props = defineProps<{
-  keyType: 'ED25519' | 'ECDSA';
   show: boolean;
+  /** Known type (e.g. when restoring a key for a known public key); hides the type dropdown */
+  keyType?: 'ED25519' | 'ECDSA';
   publicKey?: string;
 }>();
 
@@ -38,20 +39,70 @@ const emit = defineEmits(['update:show']);
 
 /* Stores */
 const user = useUserStore();
-const contacts = useContactsStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+const storeExternalKeyPair = useStoreExternalKeyPair();
 
 /* State */
+const keyTypeItems: { label: string; value: KeyTypeName | null }[] = [
+  { label: 'ED25519', value: 'ED25519' },
+  { label: 'ECDSA', value: 'ECDSA' },
+];
 const key = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
 });
+const selectedKeyType = ref<KeyTypeName | null>(null);
+// True while the selection was filled in by detection (so it can follow the pasted key)
+const isAutoSelected = ref(false);
+
+/* Computed */
+const detectedKeyType = computed(() => detectPrivateKeyType(key.privateKey));
+
+const resolvedKeyType = computed<KeyTypeName | null>(
+  () => props.keyType ?? selectedKeyType.value,
+);
+
+const hasTypeMismatch = computed(
+  () =>
+    !props.keyType &&
+    selectedKeyType.value !== null &&
+    detectedKeyType.value !== null &&
+    detectedKeyType.value !== selectedKeyType.value,
+);
+
+const typeMessage = computed(() => {
+  if (key.privateKey.trim() !== '' && isMalformed.value) {
+    return 'Invalid private key.';
+  }
+  if (props.keyType || key.privateKey.trim() === '') return null;
+  if (hasTypeMismatch.value) {
+    return `Pasted key is ${detectedKeyType.value}, not ${selectedKeyType.value}.`;
+  }
+  if (selectedKeyType.value === null) {
+    return 'Key type not detected. Select one.';
+  }
+  return null;
+});
+
+const isMalformed = computed(() => !isPrivateKeyWellFormed(key.privateKey));
+
+const canImport = computed(
+  () =>
+    key.privateKey.trim() !== '' &&
+    resolvedKeyType.value !== null &&
+    !hasTypeMismatch.value &&
+    !isMalformed.value,
+);
 
 /* Handlers */
 const handleImportExternalKey = async () => {
   assertUserLoggedIn(user.personal);
+
+  const type = resolvedKeyType.value;
+  if (type === null || hasTypeMismatch.value) return;
+
   const personalPassword = getPassword(handleImportExternalKey, {
     subHeading: 'Private key/s will be encrypted with this password',
   });
@@ -62,52 +113,54 @@ const handleImportExternalKey = async () => {
       throw new Error('The private key does not match the public key');
     }
 
-    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-      user_id: user.personal.id,
-      ...generateExternalKeyPairFromString(key.privateKey, props.keyType, key.nickname || ''),
-      organization_id: null,
-      organization_user_id: null,
-      type: props.keyType,
-      secret_hash: null,
-    };
+    const keyPair = generateExternalKeyPairFromString(
+      key.privateKey.trim(),
+      type,
+      key.nickname || '',
+    );
+    await storeExternalKeyPair(keyPair, type, personalPassword);
 
-    if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
-      throw new Error('Key pair already exists');
-    }
-
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
-        throw new Error('Key pair already exists');
-      }
-
-      keyPair.organization_id = user.selectedOrganization.id;
-      keyPair.organization_user_id = user.selectedOrganization.userId;
-
-      await safeDuplicateUploadKey(user.selectedOrganization, {
-        publicKey: keyPair.public_key,
-      });
-    }
-
-    await user.storeKey(keyPair, null, personalPassword, false);
-    await user.refetchUserState();
-    await safeAwait(contacts.fetch());
+    logger.info('Private key imported', {
+      keyType: type,
+      publicKey: keyPair.public_key,
+      keyTypeWasSelected: selectedKeyType.value !== null && !isAutoSelected.value,
+      restoringKnownPublicKey: Boolean(props.publicKey),
+    });
 
     emit('update:show', false);
 
-    toastManager.success(`${props.keyType} private key imported successfully`);
+    toastManager.success(`${type} private key imported successfully`);
   } catch (error) {
-    toastManager.error(
-      getErrorMessage(error, `Failed to import ${props.keyType} private key`),
-    );
+    logger.error('Failed to import private key', {
+      keyType: type,
+      restoringKnownPublicKey: Boolean(props.publicKey),
+      error,
+    });
+    toastManager.error(getErrorMessage(error, `Failed to import ${type} private key`));
   }
 };
 
+const handleKeyTypeSelected = (value: KeyTypeName | null) => {
+  selectedKeyType.value = value;
+  isAutoSelected.value = false;
+};
+
 /* Watchers */
+watch(detectedKeyType, detected => {
+  // Fill in the type from the pasted key unless the user chose one themselves
+  if (selectedKeyType.value === null || isAutoSelected.value) {
+    selectedKeyType.value = detected;
+    isAutoSelected.value = detected !== null;
+  }
+});
+
 watch(
   () => props.show,
   () => {
     key.privateKey = '';
     key.nickname = '';
+    selectedKeyType.value = null;
+    isAutoSelected.value = false;
   },
 );
 </script>
@@ -129,23 +182,41 @@ watch(
       <form @submit.prevent="handleImportExternalKey">
         <div v-if="props.publicKey" class="form-group mt-4">
           <label class="form-label">Public Key</label>
-          <p
-            :data-testid="`label-${keyType.toLocaleLowerCase()}-public-key`"
-            class="d-inline-block text-truncate w-100"
-          >
+          <p data-testid="label-public-key" class="d-inline-block text-truncate w-100">
             {{ props.publicKey }}
           </p>
         </div>
+        <div v-if="!props.keyType" class="form-group mt-4">
+          <label class="form-label">Key Type</label>
+          <AppSelect
+            :value="selectedKeyType"
+            @update:value="handleKeyTypeSelected"
+            :items="keyTypeItems"
+            toggle-text="Select key type"
+            toggler-icon
+            size="small"
+            button-class="w-100"
+            class="w-100"
+            data-testid="select-private-key-type"
+          />
+        </div>
         <div class="form-group mt-4">
-          <label class="form-label">Enter {{ keyType }} Private key</label>
+          <label class="form-label">Enter {{ resolvedKeyType || '' }} Private key</label>
           <AppInput
             v-model="key.privateKey"
             size="small"
             name="private-key"
             :filled="true"
-            :placeholder="`Type ${keyType} Private key`"
-            :data-testid="`input-${keyType.toLocaleLowerCase()}-private-key`"
+            placeholder="Type Private key"
+            data-testid="input-private-key"
           />
+          <div
+            v-if="typeMessage"
+            class="text-small text-danger mt-2"
+            data-testid="label-key-type-message"
+          >
+            {{ typeMessage }}
+          </div>
         </div>
         <div class="form-group mt-4">
           <label class="form-label">Enter nickname (optional)</label>
@@ -155,7 +226,7 @@ watch(
             name="nickname"
             :filled="true"
             placeholder="Type nickname"
-            :data-testid="`input-${keyType.toLocaleLowerCase()}-private-key-nickname`"
+            data-testid="input-private-key-nickname"
           />
         </div>
 
@@ -163,9 +234,10 @@ watch(
 
         <div class="d-grid">
           <AppButton
-            :data-testid="`button-${keyType.toLocaleLowerCase()}-private-key-import`"
+            data-testid="button-private-key-import"
             type="submit"
             color="primary"
+            :disabled="!canImport"
             >Import</AppButton
           >
         </div>

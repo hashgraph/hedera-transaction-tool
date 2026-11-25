@@ -69,7 +69,8 @@ export class RegistrationPage extends BasePage {
   passwordRequirementsTooltipFallbackSelector = 'css=.tooltip .tooltip-inner';
 
   getRecoveryWordSelector(index: number) {
-    return this.inputRecoveryWordBase + index;
+    // Only visible inputs: Settings keeps hidden recovery phrase modals mounted in the DOM
+    return `css=[data-testid="${this.inputRecoveryWordBase}${index}"]:visible`;
   }
 
   async clearLastRecoveryPhraseWord() {

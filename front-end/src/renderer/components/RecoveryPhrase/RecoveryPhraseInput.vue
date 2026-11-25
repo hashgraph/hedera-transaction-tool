@@ -81,6 +81,11 @@ const onKeyDownHandler = (e: KeyboardEvent) => {
   }
 };
 
+/* Functions */
+const setWords = (newWords: string[]) => {
+  words.value = [...newWords];
+};
+
 /* Hooks */
 onBeforeMount(() => {
   if (user.recoveryPhrase) {
@@ -106,6 +111,9 @@ watchEffect(() => {
     emit('reset-cleared', false);
   }
 });
+
+/* Expose */
+defineExpose({ setWords });
 </script>
 <template>
   <div>

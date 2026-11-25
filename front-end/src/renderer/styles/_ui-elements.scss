@@ -82,15 +82,21 @@ td .btn {
 
 /* AppSelect: layout of the toggle, with a compact "small" variant */
 .app-select {
+  // The label takes the remaining space (and can shrink), the chevron keeps its own width
   .app-select-label {
-    flex: 0 0 auto;
-    width: 91.66666667%;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .app-select-icon {
     flex: 0 0 auto;
-    width: 8.33333333%;
     margin-left: $spacer;
+  }
+
+  // text-body on the items is !important and would otherwise override the selected
+  // item's text color (only visible while not hovering)
+  .dropdown-item.active {
+    color: var(--#{$prefix}dropdown-link-active-color) !important;
   }
 
   &.app-select-small {
@@ -103,13 +109,7 @@ td .btn {
       border-radius: $form-select-border-radius-sm;
     }
 
-    .app-select-label {
-      flex: 1 1 auto;
-      width: auto;
-    }
-
     .app-select-icon {
-      width: auto;
       margin-left: $spacer * 0.5;
     }
 
@@ -133,12 +133,6 @@ td .btn {
         background-color: var(--#{$prefix}input-fill-focus-bg-color);
         border-color: var(--#{$prefix}input-fill-focus-bg-color);
       }
-    }
-
-    // text-body on the items is !important and would otherwise override the selected
-    // item's text color (only visible while not hovering)
-    .dropdown-item.active {
-      color: var(--#{$prefix}dropdown-link-active-color) !important;
     }
   }
 }

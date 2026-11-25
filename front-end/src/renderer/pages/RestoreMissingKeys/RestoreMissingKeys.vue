@@ -8,6 +8,8 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
+import type { KeyType } from '@renderer/types';
+
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 
 import {
@@ -19,7 +21,7 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -99,6 +101,7 @@ const storeKeys = async (
     privateKey: string;
     index: number;
     mnemonicHash: string;
+    keyType: KeyType;
   }[],
 ) => {
   assertUserLoggedIn(user.personal);
@@ -121,7 +124,7 @@ const storeKeys = async (
           index: key.index,
           private_key: key.privateKey,
           public_key: key.publicKey,
-          type: 'ED25519',
+          type: key.keyType,
           organization_id: user.selectedOrganization.id,
           organization_user_id: user.selectedOrganization.userId,
           secret_hash: key.mnemonicHash,
@@ -160,7 +163,10 @@ onMounted(() => {
       <form @submit.prevent="handleImportRecoveryPhrase" class="fill-remaining">
         <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
         <div class="mt-8">
-          <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
+          <RecoveryPhraseInput
+            :should-clear="shouldClearInputs"
+            @reset-cleared="handleClearWords($event)"
+          />
           <div class="d-flex justify-content-between mt-4 mx-3">
             <div class="">
               <AppButton type="button" color="secondary" @click="handleClearWords(true)"

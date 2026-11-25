@@ -14,6 +14,7 @@ import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import {
   assertUserLoggedIn,
   getAccountIdWithChecksum,
+  getErrorMessage,
   isLoggedInOrganization,
 } from '@renderer/utils';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
@@ -101,9 +102,13 @@ const reUploadActionEnabled = computed(() => {
 });
 
 /* Handlers */
-const handleCopy = (text: string, message: string) => {
-  navigator.clipboard.writeText(text);
-  toastManager.success(message);
+const handleCopy = async (text: string, message: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toastManager.success(message);
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to copy to the clipboard'));
+  }
 };
 
 const handleShowPrivateKey = async () => {

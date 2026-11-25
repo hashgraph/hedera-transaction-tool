@@ -64,6 +64,7 @@ watch(
 <template>
   <div ref="dropdownRef" class="dropdown app-select" :class="{ 'app-select-small': size === 'small' }">
     <AppButton
+      type="button"
       :color="(colorOnActive && active) || !colorOnActive ? color : undefined"
       class="d-flex flex-centered justify-content-between mw-100"
       data-bs-toggle="dropdown"
