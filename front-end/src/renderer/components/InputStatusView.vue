@@ -9,10 +9,11 @@ const props = defineProps<{ status: InputStatus; invalidMessage: string }>();
 const opacityClass = computed(() =>
   props.status == InputStatus.invalid ? 'opacity-100' : 'opacity-0',
 );
+const ariaHidden = computed(() => props.status == InputStatus.invalid);
 </script>
 
 <template>
-  <span class="text-warning text-micro" :class="opacityClass">
+  <span class="text-warning text-micro" :class="opacityClass" :aria-hidden="ariaHidden">
     <i class="bi bi-exclamation-triangle-fill me-1" />
     {{ props.invalidMessage }}
   </span>
