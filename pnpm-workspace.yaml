@@ -41,8 +41,8 @@ allowBuilds:
 catalog:
   '@eslint/eslintrc': 3.3.7
   '@eslint/js': 10.0.1
-  '@typescript-eslint/eslint-plugin': 8.72.2
-  '@typescript-eslint/parser': 8.72.2
+  '@typescript-eslint/eslint-plugin': 8.73.0
+  '@typescript-eslint/parser': 8.73.0
   '@hiero-ledger/proto': 2.32.1
   '@hiero-ledger/sdk': 2.91.0
   '@types/bcrypt': 6.0.0
