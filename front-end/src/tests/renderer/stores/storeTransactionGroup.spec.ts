@@ -108,9 +108,9 @@ describe('useTransactionGroupStore', () => {
       ]);
 
       vi.mocked(getDrafts).mockResolvedValue([
-        { id: 'draft-1', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x01', type: 'Transfer', description: 'tx1', isTemplate: null, details: null },
-        { id: 'draft-2', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x02', type: 'Transfer', description: 'tx2', isTemplate: null, details: null },
-        { id: 'draft-3', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x03', type: 'Transfer', description: 'tx3', isTemplate: null, details: null },
+        { id: 'draft-1', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x01', type: 'Transfer', description: 'tx1', isTemplate: null, details: null, submitManually: false },
+        { id: 'draft-2', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x02', type: 'Transfer', description: 'tx2', isTemplate: null, details: null, submitManually: false },
+        { id: 'draft-3', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x03', type: 'Transfer', description: 'tx3', isTemplate: null, details: null, submitManually: false },
       ]);
 
       vi.mocked(getTransactionFromBytes).mockReturnValue(mockTransaction as any);
@@ -673,6 +673,41 @@ describe('useTransactionGroupStore', () => {
       expect(rowKeysAfter).toEqual(rowKeysBefore);
     });
 
+    test('fetchGroup restores each item\'s isManual from the persisted draft', async () => {
+      const base = Date.now() + 120_000;
+      const starts: Record<string, Date> = { '0x01': new Date(base), '0x02': new Date(base + 5000) };
+
+      vi.mocked(getGroup).mockResolvedValue({
+        id: 'group-1',
+        created_at: new Date(),
+        description: 'g',
+        atomic: false,
+        groupValidStart: new Date(base),
+      });
+      vi.mocked(getGroupItems).mockResolvedValue([
+        { transaction_id: null, transaction_draft_id: 'd1', transaction_group_id: 'group-1', seq: '0' },
+        { transaction_id: null, transaction_draft_id: 'd2', transaction_group_id: 'group-1', seq: '1' },
+      ]);
+      vi.mocked(getDrafts).mockResolvedValue([
+        { id: 'd1', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x01', type: 'Transfer', description: 'a', isTemplate: null, details: null, submitManually: true },
+        { id: 'd2', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x02', type: 'Transfer', description: 'b', isTemplate: null, details: null, submitManually: false },
+      ]);
+      vi.mocked(getTransactionFromBytes).mockImplementation(
+        (bytes: any) =>
+          ({
+            toBytes: () => new Uint8Array([1, 2, 3]),
+            transactionId: {
+              accountId: { toString: () => '0.0.1' },
+              validStart: { toDate: () => new Date(starts[bytes as string]) },
+            },
+          }) as any,
+      );
+
+      await store.fetchGroup('group-1', {});
+
+      expect(store.groupItems.map(i => i.isManual)).toEqual([true, false]);
+    });
+
     test('fetchGroup assigns fresh rowKeys to each hydrated item', async () => {
       const futureStart = new Date(Date.now() + 120_000);
       const mockTransaction = {
@@ -695,8 +730,8 @@ describe('useTransactionGroupStore', () => {
         { transaction_id: null, transaction_draft_id: 'd2', transaction_group_id: 'group-1', seq: '1' },
       ]);
       vi.mocked(getDrafts).mockResolvedValue([
-        { id: 'd1', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x01', type: 'Transfer', description: 'a', isTemplate: null, details: null },
-        { id: 'd2', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x02', type: 'Transfer', description: 'b', isTemplate: null, details: null },
+        { id: 'd1', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x01', type: 'Transfer', description: 'a', isTemplate: null, details: null, submitManually: false },
+        { id: 'd2', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x02', type: 'Transfer', description: 'b', isTemplate: null, details: null, submitManually: false },
       ]);
       vi.mocked(getTransactionFromBytes).mockReturnValue(mockTransaction as any);
 

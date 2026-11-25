@@ -130,6 +130,7 @@ const groupActionTaken = ref(false);
 const memoError = ref(false);
 const initialTransaction = ref<T | null>(null);
 const initialDescription = ref('');
+const initialSubmitManually = ref(false);
 const transactionKey = ref<KeyList>(new KeyList([]));
 
 // Id of the bytes most recently handed to the processor. A duplicate-id retry
@@ -170,7 +171,14 @@ const hasDescriptionChanged = computed(() => {
   return description.value !== toRaw(initialDescription.value);
 });
 
-const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescriptionChanged.value);
+const hasSubmitManuallyChanged = computed(
+  () => submitManually.value !== initialSubmitManually.value,
+);
+
+const hasDataChanged = computed(
+  () =>
+    hasTransactionChanged.value || hasDescriptionChanged.value || hasSubmitManuallyChanged.value,
+);
 
 const isNodeCreationPrivRequired = computed(() => {
   return (
@@ -189,10 +197,16 @@ const payerInfo = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: T, loadedDescription: string): Promise<void> => {
+const handleDraftLoaded = async (
+  transaction: T,
+  loadedDescription: string,
+  loadedSubmitManually = false,
+): Promise<void> => {
   initialTransaction.value = transaction;
   description.value = loadedDescription;
   initialDescription.value = loadedDescription;
+  submitManually.value = loadedSubmitManually;
+  initialSubmitManually.value = loadedSubmitManually;
 
   const txData = getTransactionCommonData(transaction);
   payerData.accountId.value = txData.payerId;
@@ -328,6 +342,7 @@ function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
 
 function handleFetchedIsManual(fetchedIsManual: boolean) {
   submitManually.value = fetchedIsManual;
+  initialSubmitManually.value = fetchedIsManual;
 }
 
 function handleInputValidation(e: Event) {
@@ -349,13 +364,20 @@ const saveDraft = async (): Promise<void> => {
     await updateDraft(draftId, {
       transactionBytes: transactionBytes.toString(),
       description: description.value,
+      submitManually: submitManually.value,
     });
     isDraftSaved.value = true;
     toastManager.success('Draft updated');
   } else {
     // Draft does not exist yet => this is an add
     assertUserLoggedIn(user.personal);
-    await addDraft(user.personal.id, transactionBytes, description.value);
+    await addDraft(
+      user.personal.id,
+      transactionBytes,
+      description.value,
+      undefined,
+      submitManually.value,
+    );
     isDraftSaved.value = true;
     toastManager.success('Draft saved');
   }
@@ -510,6 +532,7 @@ defineExpose({
       @editGroupItem="handleGroupAction('edit', $event)"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
       :description="description || ''"
+      :submit-manually="submitManually"
       :has-data-changed="hasDataChanged"
     />
   </div>

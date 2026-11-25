@@ -19,6 +19,10 @@ let mockRouteQuery: Record<string, string | undefined> = {};
 const mocks = vi.hoisted(() => ({
   loadedDraftTransaction: null as TransferTransaction | null,
   loadedDraftDescription: '',
+  loadedDraftSubmitManually: undefined as boolean | undefined,
+  fetchedIsManual: undefined as boolean | undefined,
+  addDraft: vi.fn(),
+  updateDraft: vi.fn(),
   infoControlsDescription: null as string | null,
   infoControlsDelayMs: 0,
   routeDown: vi.fn(),
@@ -31,7 +35,15 @@ vi.mock('vue-router', () => ({
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
-  default: () => ({ selectedOrganization: null, keyPairs: [] }),
+  default: () => ({
+    selectedOrganization: null,
+    keyPairs: [],
+    personal: { id: 'user-1', isLoggedIn: true },
+  }),
+}));
+vi.mock('@renderer/services/transactionDraftsService', () => ({
+  addDraft: mocks.addDraft,
+  updateDraft: mocks.updateDraft,
 }));
 vi.mock('@renderer/stores/storeNetwork', () => ({
   default: () => ({ mirrorNodeBaseURL: 'http://localhost' }),
@@ -73,7 +85,12 @@ vi.mock('@renderer/utils/transactions', () => ({
 // see what getInitialValidStart() seeded into the reactive data. Each factory
 // is inlined because vi.mock is hoisted above any module-level helper.
 vi.mock('@renderer/components/Transaction/TransactionHeaderControls.vue', () => ({
-  default: { name: 'TransactionHeaderControls', props: ['validStart'], template: '<div></div>' },
+  default: {
+    name: 'TransactionHeaderControls',
+    props: ['validStart', 'saveDraft', 'submitManually'],
+    emits: ['update:submitManually'],
+    template: '<div></div>',
+  },
 }));
 vi.mock('@renderer/components/Transaction/TransactionInfoControls.vue', () => ({
   default: {
@@ -98,18 +115,36 @@ vi.mock('@renderer/components/Transaction/TransactionIdControls.vue', () => ({
 vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue', () => ({
   default: {
     name: 'BaseDraftLoad',
-    mounted(this: {
-      $emit: (event: 'draft-loaded', tx: TransferTransaction, description: string) => void;
-    }) {
+    mounted(
+      this: {
+        $emit: (
+          event: 'draft-loaded',
+          tx: TransferTransaction,
+          description: string,
+          submitManually?: boolean,
+        ) => void;
+      },
+    ) {
       if (mocks.loadedDraftTransaction) {
-        this.$emit('draft-loaded', mocks.loadedDraftTransaction, mocks.loadedDraftDescription);
+        this.$emit(
+          'draft-loaded',
+          mocks.loadedDraftTransaction,
+          mocks.loadedDraftDescription,
+          mocks.loadedDraftSubmitManually,
+        );
       }
     },
     template: '<div></div>',
   },
 }));
 vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue', () => ({
-  default: { name: 'BaseGroupHandler', template: '<div></div>' },
+  default: {
+    name: 'BaseGroupHandler',
+    mounted(this: { $emit: (event: 'fetchedIsManual', value: boolean) => void }) {
+      if (mocks.fetchedIsManual !== undefined) this.$emit('fetchedIsManual', mocks.fetchedIsManual);
+    },
+    template: '<div></div>',
+  },
 }));
 vi.mock(
   '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue',
@@ -118,7 +153,7 @@ vi.mock(
 vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseTransactionModal.vue', () => ({
   default: {
     name: 'BaseTransactionModal',
-    props: ['hasDataChanged'],
+    props: ['hasDataChanged', 'submitManually'],
     template: '<div></div>',
   },
 }));
@@ -286,6 +321,121 @@ describe('BaseTransaction.vue – initial valid start', () => {
       wrapper.unmount();
       vi.useRealTimers();
     }
+  });
+});
+
+describe('BaseTransaction.vue – submit manually in drafts', () => {
+  beforeEach(() => {
+    mockRouteQuery = {};
+    mocks.loadedDraftTransaction = null;
+    mocks.loadedDraftDescription = '';
+    mocks.loadedDraftSubmitManually = undefined;
+    mocks.fetchedIsManual = undefined;
+    mocks.infoControlsDescription = null;
+    mocks.infoControlsDelayMs = 0;
+    mocks.addDraft.mockReset();
+    mocks.updateDraft.mockReset();
+  });
+
+  const headerControls = (wrapper: ReturnType<typeof mountBase>) =>
+    wrapper.findComponent({ name: 'TransactionHeaderControls' });
+
+  test('restores the checkbox from a loaded draft', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+    mocks.loadedDraftSubmitManually = true;
+
+    const wrapper = mountBase();
+    await flushPromises();
+
+    expect(headerControls(wrapper).props('submitManually')).toBe(true);
+  });
+
+  test('leaves the checkbox unchecked when the loaded draft does not carry the flag', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+
+    const wrapper = mountBase();
+    await flushPromises();
+
+    expect(headerControls(wrapper).props('submitManually')).toBe(false);
+  });
+
+  test('passes the checkbox state to the unsaved-changes modal', async () => {
+    const wrapper = mountBase();
+    await headerControls(wrapper).vm.$emit('update:submitManually', true);
+    await flushPromises();
+
+    expect(wrapper.findComponent({ name: 'BaseTransactionModal' }).props('submitManually')).toBe(
+      true,
+    );
+  });
+
+  test('saves a new draft with the checkbox state', async () => {
+    const wrapper = mountBase();
+    await headerControls(wrapper).vm.$emit('update:submitManually', true);
+    await flushPromises();
+
+    await (headerControls(wrapper).props('saveDraft') as () => Promise<void>)();
+
+    expect(mocks.addDraft).toHaveBeenCalledTimes(1);
+    const args = mocks.addDraft.mock.calls[0];
+    expect(args[0]).toBe('user-1');
+    expect(args[4]).toBe(true);
+    expect(mocks.updateDraft).not.toHaveBeenCalled();
+  });
+
+  test('updates an existing draft with the checkbox state', async () => {
+    mockRouteQuery = { draftId: 'draft-1' };
+    const wrapper = mountBase();
+    await headerControls(wrapper).vm.$emit('update:submitManually', true);
+    await flushPromises();
+
+    await (headerControls(wrapper).props('saveDraft') as () => Promise<void>)();
+
+    expect(mocks.updateDraft).toHaveBeenCalledTimes(1);
+    expect(mocks.updateDraft.mock.calls[0][0]).toBe('draft-1');
+    expect(mocks.updateDraft.mock.calls[0][1]).toMatchObject({ submitManually: true });
+    expect(mocks.addDraft).not.toHaveBeenCalled();
+  });
+
+  const dataChanged = (wrapper: ReturnType<typeof mountBase>) =>
+    wrapper.findComponent({ name: 'BaseTransactionModal' }).props('hasDataChanged');
+
+  test('treats a checkbox-only edit as an unsaved change and reverting it as clean', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+    mocks.loadedDraftSubmitManually = false;
+    const wrapper = mountBase();
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(false);
+
+    await headerControls(wrapper).vm.$emit('update:submitManually', true);
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(true);
+
+    await headerControls(wrapper).vm.$emit('update:submitManually', false);
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(false);
+  });
+
+  test('a draft loaded with the checkbox checked is clean until it is changed', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+    mocks.loadedDraftSubmitManually = true;
+    const wrapper = mountBase();
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(false);
+
+    await headerControls(wrapper).vm.$emit('update:submitManually', false);
+    await flushPromises();
+    expect(dataChanged(wrapper)).toBe(true);
+  });
+
+  test('a group item fetched as manual starts with the checkbox checked and clean', async () => {
+    mocks.loadedDraftTransaction = createTransferTransaction(new Date(), 'memo');
+    mocks.fetchedIsManual = true;
+    const wrapper = mountBase();
+    await flushPromises();
+
+    expect(headerControls(wrapper).props('submitManually')).toBe(true);
+    expect(dataChanged(wrapper)).toBe(false);
   });
 });
 

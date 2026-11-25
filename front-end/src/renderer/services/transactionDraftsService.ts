@@ -22,6 +22,7 @@ export const addDraft = async (
   transactionBytes: Uint8Array,
   description: string,
   details?: string,
+  submitManually = false,
 ): Promise<TransactionDraft> => {
   const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
     created_at: new Date(),
@@ -31,6 +32,7 @@ export const addDraft = async (
     type: getTransactionType(transactionBytes),
     description: description || '',
     details: details || null,
+    submitManually,
   };
 
   return await commonIPCHandler(async () => {

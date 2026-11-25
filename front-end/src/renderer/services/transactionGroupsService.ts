@@ -65,6 +65,7 @@ export const addGroupWithDrafts = async (
         type: getTransactionType(item.transactionBytes),
         description: item.description,
         details: details || null,
+        submitManually: item.isManual ?? false,
       };
       const draft = await window.electronAPI.local.transactionDrafts.addDraft(transactionDraft);
       const groupItem: Prisma.GroupItemUncheckedCreateInput = {
@@ -139,6 +140,7 @@ export async function updateGroup(
       description: item.description,
       transactionBytes: item.transactionBytes.toString(),
       type: getTransactionType(item.transactionBytes),
+      submitManually: item.isManual ?? false,
     }));
 
     await window.electronAPI.local.transactionGroups.updateGroupWithItems(id, group, drafts);
