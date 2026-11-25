@@ -67,6 +67,9 @@ const shouldClearInputs = ref(false);
 const isGenerated = ref(false);
 // The stored hash of this phrase if we already know it, otherwise its fresh hash
 const resolvedHash = ref<string | null>(null);
+// The lookup of resolvedHash that is in flight. Saving waits for it, otherwise a phrase that is
+// already known could be saved under a new hash.
+let knownHashLookup: Promise<void> = Promise.resolve();
 
 const mnemonicHashNickname = ref('');
 
@@ -143,6 +146,8 @@ const handleSave = async () => {
 
   try {
     loadingText.value = 'Restoring key pair...';
+
+    await knownHashLookup;
 
     const privateKey = await restorePrivateKey(
       recoveryPhrase.words,
@@ -267,7 +272,7 @@ watch(
   () => {
     indexEdited.value = false;
     resolvedHash.value = null;
-    resolveKnownHash().catch(error =>
+    knownHashLookup = resolveKnownHash().catch(error =>
       logger.error('Failed to look up the recovery phrase nickname', { error }),
     );
     findEmptyIndex().catch(error => logger.error('Failed to find an unused key index', { error }));

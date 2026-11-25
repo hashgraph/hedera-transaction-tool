@@ -642,6 +642,47 @@ describe('RecoveryPhraseKeyModal.vue', () => {
       expect(mocks.setNickname).toHaveBeenCalledWith('stored-hash', expect.any(String));
     });
 
+    test('waits for the lookup of a known phrase before saving, so its stored hash is used', async () => {
+      let finishLookup!: (hash: string) => void;
+      mocks.compareDataToHashes.mockReturnValue(
+        new Promise<string>(resolve => (finishLookup = resolve)),
+      );
+      const wrapper = await mountModal();
+      await setPhrase();
+      await goToStep2(wrapper);
+
+      // Saved before the lookup finished
+      await save(wrapper);
+      expect(mocks.storeKey).not.toHaveBeenCalled();
+
+      finishLookup('stored-hash');
+      await flushPromises();
+
+      expect(mocks.storeKey).toHaveBeenCalledWith(
+        expect.objectContaining({ secret_hash: 'stored-hash' }),
+        'stored-hash',
+        'pw',
+        false,
+      );
+      expect(mocks.setNickname).toHaveBeenCalledWith('stored-hash', expect.any(String));
+    });
+
+    test('still saves under the new hash when the lookup fails', async () => {
+      mocks.compareDataToHashes.mockRejectedValue(new Error('ipc down'));
+      const wrapper = await mountModal();
+      await setPhrase();
+      await goToStep2(wrapper);
+
+      await save(wrapper);
+
+      expect(mocks.storeKey).toHaveBeenCalledWith(
+        expect.objectContaining({ secret_hash: PHRASE_HASH }),
+        PHRASE_HASH,
+        'pw',
+        false,
+      );
+    });
+
     test('saves the nickname of the phrase', async () => {
       const wrapper = await mountModal();
       await setPhrase();
