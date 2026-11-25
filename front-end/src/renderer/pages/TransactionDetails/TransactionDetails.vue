@@ -27,6 +27,7 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards';
+import { redirectToPreviousTransactionsTab } from '@renderer/utils/router';
 
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -67,6 +68,9 @@ import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { isSignableStatus } from '@renderer/utils/transactionStatusGuards';
 import { CREATOR_SIGNATURE_TEXT } from '@renderer/utils/creatorSignatureText';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.pages.TransactionDetails');
 
 /* Injectables */
 const toastManager = ToastManager.inject();
@@ -82,13 +86,13 @@ const router = useRouter() as _RouterClassic & Record<string, string>;
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
   if (!parsed) {
-    await fetchTransactionOnNotif();
+    await refetchOnNotif();
     return;
   } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!orgTransaction.value && !localTransaction.value) {
-    await fetchTransactionOnNotif();
+    await refetchOnNotif();
     return;
   }
 
@@ -98,7 +102,7 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
     parsed.transactionIds.includes(currentId) ||
     (currentGroupId && parsed.groupIds.includes(currentGroupId))
   ) {
-    await fetchTransactionOnNotif();
+    await refetchOnNotif();
   }
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -228,9 +232,39 @@ const formattedId = computed(() => {
   return id ? (Array.isArray(id) ? id[0] : id) : null;
 });
 
+// The real Hedera-format transaction id (e.g. "0.0.x@seconds.nanos"), carried on the route by
+// whichever list the user navigated from. Only used for error reporting below - never to
+// perform the actual lookup, which always happens by the local/DB id.
+const knownSdkTransactionId = computed(() => {
+  const txId = route.query.txId;
+  return typeof txId === 'string' ? txId : null;
+});
+
 /* Functions */
+
+// Logs everything we know about a failed fetch (both the DB/local id and the real Hedera id,
+// when available) and returns the error to throw. The user-facing message never exposes the DB
+// id: it uses the real transaction id when known, otherwise a generic message. Diagnosis relies
+// on the log.
+function buildTransactionFetchError(
+  error: unknown,
+  dbId: string,
+  previousSdkTransactionId?: string,
+): Error {
+  const sdkTransactionId = previousSdkTransactionId || knownSdkTransactionId.value || undefined;
+  logger.error('Failed to load transaction', { dbId, sdkTransactionId, cause: error });
+  return new Error(
+    sdkTransactionId
+      ? `Failed to load transaction ${sdkTransactionId}`
+      : 'Failed to load transaction. Please contact your administrator.',
+  );
+}
+
 async function fetchTransaction() {
   const id = formattedId.value!;
+  // Captured before any lookup so a failed refetch can still report the id from a prior load
+  const previousSdkTransactionId =
+    orgTransaction.value?.transactionId || localTransaction.value?.transaction_id;
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
@@ -266,13 +300,17 @@ async function fetchTransaction() {
       }
     }
   } catch (error) {
-    throw error;
+    throw buildTransactionFetchError(error, id, previousSdkTransactionId);
   }
 
   try {
     sdkTransaction.value = SDKTransaction.fromBytes(transactionBytes);
-  } catch {
-    throw new Error('Failed to deserialize transaction');
+  } catch (error) {
+    throw buildTransactionFetchError(
+      new Error('Failed to deserialize transaction', { cause: error }),
+      id,
+      previousSdkTransactionId,
+    );
   }
 
   if (!(sdkTransaction.value instanceof SDKTransaction)) {
@@ -302,6 +340,12 @@ async function fetchTransaction() {
       );
     } catch (error) {
       signatureKeyObject.value = null;
+      logger.error('Failed to compute signature key', {
+        dbId: id,
+        sdkTransactionId:
+          orgTransaction.value?.transactionId ?? knownSdkTransactionId.value ?? undefined,
+        cause: error,
+      });
       toastManager.error(getErrorMessage(error, 'Failed to compute signature key'));
     }
   }
@@ -319,6 +363,17 @@ async function fetchTransactionOnNotif(): Promise<void> {
   await fetchTransaction();
 }
 
+// Websocket-triggered refetches run outside any Vue handler, so a failure would otherwise be an
+// unhandled rejection with no user feedback. buildTransactionFetchError has already logged it.
+// Unlike the initial load the page still has data, so toast but don't redirect.
+async function refetchOnNotif(): Promise<void> {
+  try {
+    await fetchTransactionOnNotif();
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to refresh transaction'));
+  }
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = formattedId.value;
@@ -328,7 +383,21 @@ onBeforeMount(async () => {
     return;
   }
 
-  await fetchTransaction();
+  try {
+    await fetchTransaction();
+  } catch (error) {
+    // Nothing useful can be shown on this page if the initial load failed; send the user back
+    // to the transactions tab they last had open (the default tab if there is none, e.g. a
+    // fresh session) instead of leaving them on an infinite loader. Toast manually since catching here stops it from reaching the global
+    // onErrorCaptured handler.
+    logger.error('Initial transaction load failed; redirecting to transactions list', {
+      dbId: id,
+      sdkTransactionId: knownSdkTransactionId.value ?? undefined,
+      cause: error,
+    });
+    toastManager.error(getErrorMessage(error, 'Failed to load transaction'));
+    await redirectToPreviousTransactionsTab(router);
+  }
 });
 
 onBeforeRouteLeave(to => {

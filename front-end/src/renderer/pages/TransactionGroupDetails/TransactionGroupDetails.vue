@@ -275,13 +275,18 @@ const handleBack = async () => {
   router.back();
 };
 
-const handleDetails = async (id: number) => {
+const handleDetails = async (id: number, sdkTransactionId?: string) => {
   // Before routing to details, we update nextTransaction store
   const groupItems = group.value?.groupItems ?? [];
   const nodeIds = groupItems.map(item => {
-    return { transactionId: item.transactionId };
+    return { transactionId: item.transactionId, sdkTransactionId: item.transaction.transactionId };
   });
-  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
+  await nextTransaction.routeDown(
+    { transactionId: id, sdkTransactionId },
+    nodeIds,
+    router,
+    pageTitle.value,
+  );
 };
 
 const didSignAll = async (groupId: number | null, signed: boolean) => {

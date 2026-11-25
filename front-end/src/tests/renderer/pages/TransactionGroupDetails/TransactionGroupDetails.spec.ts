@@ -302,8 +302,11 @@ describe('TransactionGroupDetails.vue', () => {
 
     expect(routeDownMock).toHaveBeenCalledTimes(1);
     expect(routeDownMock).toHaveBeenCalledWith(
-      { transactionId: 101 },
-      groupResponse.groupItems.map(item => ({ transactionId: item.transactionId })),
+      { transactionId: 101, sdkTransactionId: undefined },
+      groupResponse.groupItems.map(item => ({
+        transactionId: item.transactionId,
+        sdkTransactionId: item.transaction.transactionId,
+      })),
       routerMock,
       expect.anything(),
     );

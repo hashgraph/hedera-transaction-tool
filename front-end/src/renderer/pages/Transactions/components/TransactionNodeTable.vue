@@ -206,7 +206,7 @@ const routeToDetails = async (node: ITransactionNode) => {
   const nodeIds: TransactionNodeId[] = [];
   for (const n of visibleNodes.value) {
     if (n.transactionId) {
-      nodeIds.push({ transactionId: n.transactionId });
+      nodeIds.push({ transactionId: n.transactionId, sdkTransactionId: n.sdkTransactionId });
     } else if (n.groupId) {
       nodeIds.push({ groupId: n.groupId });
     } else {
@@ -218,7 +218,7 @@ const routeToDetails = async (node: ITransactionNode) => {
   }
   if (node.transactionId) {
     await nextTransaction.routeDown(
-      { transactionId: node.transactionId },
+      { transactionId: node.transactionId, sdkTransactionId: node.sdkTransactionId },
       nodeIds,
       router,
       props.collection,
