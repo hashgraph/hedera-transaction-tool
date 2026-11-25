@@ -667,10 +667,11 @@ jobs:
                 --repo ${{ github.repository }}
             fi
           elif [ -n "$PRERELEASE" ]; then
-            # Patch releases don't produce a SNAPSHOT bump PR, so drop that
-            # checklist line when there is no PR URL.
+            # Patch releases don't produce a SNAPSHOT bump PR, so drop the whole
+            # "Pre-Release" section (heading, PR line, trailing blank) when there
+            # is no PR URL.
             SNAPSHOT_SED=()
-            [ -z "$SNAPSHOT_PR_URL" ] && SNAPSHOT_SED=(-e '/<snapshot-pr-url>/d')
+            [ -z "$SNAPSHOT_PR_URL" ] && SNAPSHOT_SED=(-e '/^## Pre-Release$/{N;N;N;d;}')
             ISSUE_BODY=$(sed \
                 "${SNAPSHOT_SED[@]}" \
                 -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
