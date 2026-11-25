@@ -2,7 +2,6 @@
 
 ## Pre-Release
 
-- [ ] Set type, labels, project, and milestone on this tracking issue
 - [ ] Review and merge the [`v<major.minor.patch>-SNAPSHOT` bump PR](<snapshot-pr-url>) to `main`
 
 ### Pre-release deployment

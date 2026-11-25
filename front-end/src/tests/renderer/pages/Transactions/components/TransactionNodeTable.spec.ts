@@ -43,9 +43,11 @@ vi.mock('@renderer/stores/storeNetwork.ts', () => ({
   default: vi.fn(() => ({ network: 'testnet' })),
 }));
 
+const { routeDownMock } = vi.hoisted(() => ({ routeDownMock: vi.fn() }));
+
 vi.mock('@renderer/stores/storeNextTransactionV2.ts', () => ({
   default: vi.fn(() => ({
-    routeDown: vi.fn(),
+    routeDown: routeDownMock,
   })),
 }));
 
@@ -116,8 +118,9 @@ const PendingReviewFieldV2Stub = defineComponent({
 const TransactionNodeRowStub = defineComponent({
   name: 'TransactionNodeRow',
   props: { node: { type: Object, required: true }, index: Number, collection: String },
+  emits: ['route-to-details'],
   template:
-    '<tr class="node-row" :data-testid="`row-${node.transactionId ?? node.groupId}`" :data-status="node.status" />',
+    '<tr class="node-row" :data-testid="`row-${node.transactionId ?? node.groupId}`" :data-status="node.status" @click="$emit(\'route-to-details\', node)" />',
 });
 
 const AppPagerStub = defineComponent({
@@ -303,5 +306,54 @@ describe('TransactionNodeTable.vue — pending review filter gated by FEATURE_RE
     expect(wrapper.find('[data-testid="row-1"]').exists()).toBe(false);
 
     vi.doUnmock('@shared/constants');
+  });
+});
+
+describe('TransactionNodeTable.vue — routing to details', () => {
+  beforeEach(() => {
+    vi.mocked(getTransactionNodes).mockReset();
+    routeDownMock.mockClear();
+  });
+
+  test('carries the real transactionId alongside the DB id when opening a single transaction', async () => {
+    vi.mocked(getTransactionNodes).mockResolvedValue([
+      node({
+        transactionId: 1,
+        sdkTransactionId: '0.0.1@1700000000.000000001',
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      }),
+    ]);
+
+    const wrapper = mountTable(TransactionNodeCollection.READY_TO_SIGN);
+    await flushPromises();
+
+    await wrapper.get('[data-testid="row-1"]').trigger('click');
+    await flushPromises();
+
+    expect(routeDownMock).toHaveBeenCalledTimes(1);
+    const [current, collection] = routeDownMock.mock.calls[0];
+    expect(current).toEqual({ transactionId: 1, sdkTransactionId: '0.0.1@1700000000.000000001' });
+    expect(collection).toEqual([current]);
+  });
+
+  test('does not attach a sdkTransactionId when opening a group', async () => {
+    const groupNode: ITransactionNode = {
+      groupId: 7,
+      description: '',
+      createdAt: '2030-01-01T00:00:00Z',
+      validStart: '2030-01-01T00:00:00Z',
+      updatedAt: '2030-01-01T00:00:00Z',
+    };
+    vi.mocked(getTransactionNodes).mockResolvedValue([groupNode]);
+
+    const wrapper = mountTable(TransactionNodeCollection.HISTORY);
+    await flushPromises();
+
+    await wrapper.get('[data-testid="row-7"]').trigger('click');
+    await flushPromises();
+
+    expect(routeDownMock).toHaveBeenCalledTimes(1);
+    const [current] = routeDownMock.mock.calls[0];
+    expect(current).toEqual({ groupId: 7 });
   });
 });

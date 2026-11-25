@@ -10,10 +10,11 @@ import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscrip
 
 const toastManager = new ToastManager();
 
-const { lookupMock, forgetMock, computeSignatureKeyMock } = vi.hoisted(() => ({
+const { lookupMock, forgetMock, computeSignatureKeyMock, loggerErrorMock } = vi.hoisted(() => ({
   lookupMock: vi.fn(),
   forgetMock: vi.fn(),
   computeSignatureKeyMock: vi.fn().mockResolvedValue(null),
+  loggerErrorMock: vi.fn(),
 }));
 
 const userStore = {
@@ -46,6 +47,8 @@ const routerMock = {
   previousTab: undefined as string | undefined,
 };
 
+const routeMock = { query: {} as Record<string, string> };
+
 vi.mock('@hiero-ledger/sdk', async importOriginal => {
   const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
   class Transaction {
@@ -60,8 +63,18 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
 
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => routerMock),
-  useRoute: vi.fn(() => ({ query: {} })),
+  useRoute: vi.fn(() => routeMock),
   onBeforeRouteLeave: vi.fn(),
+}));
+
+vi.mock('@renderer/utils/logger', () => ({
+  createLogger: () => ({
+    debug: vi.fn(),
+    error: loggerErrorMock,
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  }),
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
@@ -238,6 +251,63 @@ describe('TransactionDetails.vue review warnings', () => {
 
     expect(forgetMock).not.toHaveBeenCalled();
     expect(lookupMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('a failed refetch after a websocket event toasts the real id and does not redirect or reject', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    toastManager.reset();
+    lookupMock.mockRejectedValue(new Error('network blip'));
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+
+    await expect(
+      onAction([{ transactionIds: [101], groupIds: [], eventType: 'status_update' }]),
+    ).resolves.toBeUndefined();
+    await flushPromises();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).not.toBeNull();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
+  test('a failed legacy (payload-less) refetch also toasts instead of rejecting', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    toastManager.reset();
+    lookupMock.mockRejectedValue(new Error('network blip'));
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+
+    await expect(onAction()).resolves.toBeUndefined();
+    await flushPromises();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).not.toBeNull();
+  });
+
+  test('an event for a different transaction does not toast even if lookups would fail', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    toastManager.reset();
+    lookupMock.mockRejectedValue(new Error('network blip'));
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+
+    await onAction([{ transactionIds: [999], groupIds: [], eventType: 'status_update' }]);
+    await flushPromises();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).toBeNull();
   });
 
   test('shows no banner when there is no rejection and the transaction is not pending review', async () => {
@@ -419,5 +489,114 @@ describe('TransactionDetails.vue review warnings - flag gating', () => {
     await flushPromises();
 
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
+});
+
+describe('TransactionDetails.vue — fetch failure reporting and recovery', () => {
+  const mountFailingDetails = async () => {
+    const wrapper = mount(TransactionDetails, {
+      global: {
+        provide: {
+          [ToastManager.injectKey]: toastManager,
+        },
+        stubs: {
+          TransactionDetailsHeader: true,
+          TransactionDetailsStatusStepper: true,
+          SignatureStatus: true,
+          UsersGroup: true,
+          ExpiringBadge: true,
+          AppLoader: true,
+          DateTimeString: true,
+          TransactionId: true,
+        },
+      },
+    });
+
+    await flushPromises();
+
+    return wrapper;
+  };
+
+  beforeEach(() => {
+    lookupMock.mockReset();
+    computeSignatureKeyMock.mockReset().mockResolvedValue(null);
+    toastManager.reset();
+    routerMock.previousTab = undefined;
+    routerMock.push.mockClear();
+    routeMock.query = {};
+    loggerErrorMock.mockClear();
+  });
+
+  test('shows the real transactionId carried from the list and logs both ids', async () => {
+    routeMock.query = { txId: '0.0.101@123456.0001' };
+    const cause = new Error('network blip');
+    lookupMock.mockRejectedValue(cause);
+
+    await mountFailingDetails();
+
+    expect(
+      toastManager.findEntry('Failed to load transaction 0.0.101@123456.0001', 'error'),
+    ).not.toBeNull();
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      'Failed to load transaction',
+      expect.objectContaining({ dbId: '101', sdkTransactionId: '0.0.101@123456.0001', cause }),
+    );
+  });
+
+  test('shows a generic message (never the DB id) when no real transactionId is known, and logs the DB id', async () => {
+    lookupMock.mockRejectedValue(new Error('network blip'));
+
+    await mountFailingDetails();
+
+    expect(
+      toastManager.findEntry(
+        'Failed to load transaction. Please contact your administrator.',
+        'error',
+      ),
+    ).not.toBeNull();
+    expect(toastManager.findEntry('101', 'error')).toBeNull();
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      'Failed to load transaction',
+      expect.objectContaining({ dbId: '101', sdkTransactionId: undefined }),
+    );
+  });
+
+  test('logs both ids and toasts when computing the signature key fails, without redirecting', async () => {
+    const cause = new Error('mirror node down');
+    lookupMock.mockResolvedValue(makeOrgTransaction());
+    computeSignatureKeyMock.mockRejectedValue(cause);
+
+    await mountFailingDetails();
+
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      'Failed to compute signature key',
+      expect.objectContaining({ dbId: '101', sdkTransactionId: '0.0.101@123456.0001', cause }),
+    );
+    expect(toastManager.findEntry('mirror node down', 'error')).not.toBeNull();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
+  test('navigates back to the previous transactions tab after an initial load failure', async () => {
+    routerMock.previousTab = 'Ready to Sign';
+    lookupMock.mockRejectedValue(new Error('network blip'));
+
+    await mountFailingDetails();
+
+    expect(routerMock.push).toHaveBeenCalledWith({
+      name: 'transactions',
+      query: { tab: 'Ready to Sign' },
+    });
+  });
+
+  test('navigates to the default transactions tab when there is no previous tab (e.g. a fresh session)', async () => {
+    routerMock.previousTab = undefined;
+    lookupMock.mockRejectedValue(new Error('network blip'));
+
+    await mountFailingDetails();
+
+    expect(routerMock.push).toHaveBeenCalledWith({
+      name: 'transactions',
+      query: { tab: undefined },
+    });
   });
 });

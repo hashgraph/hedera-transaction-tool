@@ -41,12 +41,14 @@ import {
   TransactionId,
   Transfer,
   TransferTransaction,
+  ContractId,
 } from '@hiero-ledger/sdk';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
 
-import { isAccountId, isContractId, isFileId } from '../validator';
+import { isAccountId, isFileId } from '../validator';
 import { compareKeys } from '.';
+import { applyNanoOffset } from './timestamp';
 import { hexToUint8Array } from '@renderer/utils';
 import {
   compareNodeServiceEndpoint,
@@ -65,6 +67,10 @@ export type TransactionCommonData = {
   validStart: Date;
   maxTransactionFee: Hbar;
   transactionMemo: string;
+  // Nanoseconds added to validStart. Only the duplicate-id retry sets this;
+  // a Date can't carry sub-millisecond offsets and the SDK locks the id list
+  // after the first setTransactionId, so the offset has to be applied here.
+  validStartNanoOffset?: number;
 };
 
 export type AccountData = {
@@ -198,8 +204,7 @@ export type RegisteredNodeDeleteData = {
 };
 
 export type SystemData = {
-  fileId: string;
-  contractId: string;
+  fileOrContractId: FileId | ContractId | null;
 };
 
 export type SystemDeleteData = SystemData & {
@@ -225,6 +230,7 @@ export type ContractExecuteData = {
 export const createTransactionId = (
   accountId: AccountId | string,
   validStart: Timestamp | string | Date | null,
+  nanoOffset = 0,
 ) => {
   if (typeof accountId === 'string') {
     accountId = AccountId.fromString(accountId);
@@ -240,12 +246,14 @@ export const createTransactionId = (
     validStart = Timestamp.fromDate(expirationDate < new Date() ? new Date() : date);
   }
 
-  return TransactionId.withValidStart(accountId, validStart);
+  return TransactionId.withValidStart(accountId, applyNanoOffset(validStart, nanoOffset));
 };
 
 const setTransactionCommonData = (transaction: Transaction, data: TransactionCommonData) => {
   if (isAccountId(data.payerId)) {
-    transaction.setTransactionId(createTransactionId(data.payerId, data.validStart));
+    transaction.setTransactionId(
+      createTransactionId(data.payerId, data.validStart, data.validStartNanoOffset),
+    );
   }
 
   transaction.setTransactionValidDuration(180);
@@ -947,12 +955,12 @@ const setSystemData = (
   transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
   data: SystemData,
 ) => {
-  if (isFileId(data.fileId)) {
-    transaction.setFileId(data.fileId);
+  if (data.fileOrContractId instanceof FileId) {
+    transaction.setFileId(data.fileOrContractId);
   }
 
-  if (isContractId(data.contractId)) {
-    transaction.setContractId(data.contractId);
+  if (data.fileOrContractId instanceof ContractId) {
+    transaction.setContractId(data.fileOrContractId);
   }
 };
 

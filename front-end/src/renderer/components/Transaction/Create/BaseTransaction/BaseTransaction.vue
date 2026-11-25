@@ -1,7 +1,6 @@
 <script lang="ts" generic="T extends Transaction, D extends Record<string, unknown>" setup>
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
-  applyNanoOffset,
   getTransactionCommonData,
   hasStartTimestampChanged,
   type TransactionCommonData,
@@ -23,7 +22,6 @@ import {
   RegisteredNodeCreateTransaction,
   Timestamp,
   Transaction,
-  TransactionId,
 } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -135,6 +133,10 @@ const initialDescription = ref('');
 const initialSubmitManually = ref(false);
 const transactionKey = ref<KeyList>(new KeyList([]));
 
+// Id of the bytes most recently handed to the processor. A duplicate-id retry
+// rebuilds the bytes with a new validStart, which `transaction` never sees.
+let submittedSdkTransactionId: string | undefined;
+
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
 
@@ -225,16 +227,26 @@ const handleCreate = async () => {
   // retries with an already-expired validStart.
   const initialTx = createTransaction(capturedData);
   const initialTxId = initialTx.transactionId;
+  submittedSdkTransactionId = undefined;
   const baseValidStart = initialTxId?.validStart ?? null;
   const payerAccountId = initialTxId?.accountId ?? null;
 
   const bytesFactory =
     baseValidStart && payerAccountId
       ? (nanoOffset: number): Uint8Array => {
-          if (nanoOffset === 0) return initialTx.toBytes();
-          const offsetTimestamp = applyNanoOffset(baseValidStart, nanoOffset);
-          const retryTx = createTransaction(capturedData);
-          retryTx.setTransactionId(TransactionId.withValidStart(payerAccountId, offsetTimestamp));
+          if (nanoOffset === 0) {
+            submittedSdkTransactionId = initialTxId?.toString();
+            return initialTx.toBytes();
+          }
+          // Offset through the data: createTransaction already locked the id
+          // list, so setTransactionId on its result would throw. Anchor on the
+          // already-clamped base validStart so the retry can't re-clamp.
+          const retryTx = createTransaction({
+            ...capturedData,
+            validStart: baseValidStart.toDate(),
+            validStartNanoOffset: nanoOffset,
+          });
+          submittedSdkTransactionId = retryTx.transactionId?.toString();
           return retryTx.toBytes();
         }
       : undefined;
@@ -279,7 +291,10 @@ const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
 
 const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
-  const targetNodeId: TransactionNodeId = { transactionId: id };
+  const targetNodeId: TransactionNodeId = {
+    transactionId: id,
+    sdkTransactionId: submittedSdkTransactionId ?? transaction.value.transactionId?.toString(),
+  };
   await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
   emit('submitted', id, body);
 };
@@ -292,7 +307,10 @@ const handleGroupSubmit = async (id: number) => {
 };
 
 const handleLocalStored = async (id: string) => {
-  const targetNodeId: TransactionNodeId = { transactionId: id };
+  const targetNodeId: TransactionNodeId = {
+    transactionId: id,
+    sdkTransactionId: submittedSdkTransactionId ?? transaction.value.transactionId?.toString(),
+  };
   await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
 };
 

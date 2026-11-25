@@ -3,7 +3,7 @@ import type { Theme } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
-import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
+import ButtonGroup, { type ButtonGroupItem } from '@renderer/components/ui/ButtonGroup.vue';
 
 /* State */
 const theme = ref<Theme>('light');
@@ -14,13 +14,14 @@ const handleThemeChange = (newTheme: Theme) => {
 };
 
 /* Computed */
-const themeButtons = computed(() =>
-  themes.map(themeItem => ({
-    label: themeNames[themeItem],
-    value: themeItem,
-    id: `tab-appearance-${themeItem}`,
-  })),
-);
+const themeButtons =
+  (computed < ButtonGroupItem<Theme>[] >(() =>
+    themes.map(themeItem => ({
+      label: themeNames[themeItem],
+      value: themeItem,
+      id: `tab-appearance-${themeItem}`,
+    })),
+  ));
 
 /* Hooks */
 onBeforeMount(async () => {

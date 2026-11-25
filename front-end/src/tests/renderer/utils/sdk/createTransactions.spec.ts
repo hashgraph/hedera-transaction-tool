@@ -8,8 +8,10 @@ import {
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
   ContractExecuteTransaction,
+  ContractId,
   FileAppendTransaction,
   FileCreateTransaction,
+  FileId,
   FileUpdateTransaction,
   FreezeTransaction,
   FreezeType,
@@ -25,7 +27,6 @@ import {
   RegisteredNodeDeleteTransaction,
   RegisteredNodeUpdateTransaction,
   RpcRelayServiceEndpoint,
-  SystemDeleteTransaction,
   SystemUndeleteTransaction,
   Timestamp,
   Transaction,
@@ -35,7 +36,11 @@ import {
 import Long from 'long';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
-import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
+import type {
+  IAccountInfoParsed,
+  INodeInfoParsed,
+  IRegisteredNodeInfoParsed,
+} from '@shared/interfaces';
 
 import {
   createAccountCreateTransaction,
@@ -198,6 +203,20 @@ describe('createTransactionId', () => {
   });
 });
 
+describe('createTransactionId nanoOffset', () => {
+  test('adds the offset to the validStart nanos, rolling into seconds', () => {
+    const start = new Timestamp(1_900_000_000, 999_999_999);
+    const id = createTransactionId('0.0.2', start, 2);
+    expect(id.validStart?.seconds.toNumber()).toBe(1_900_000_001);
+    expect(id.validStart?.nanos.toNumber()).toBe(1);
+  });
+
+  test('defaults to no offset', () => {
+    const start = new Timestamp(1_900_000_000, 5);
+    expect(createTransactionId('0.0.2', start).validStart?.toString()).toBe(start.toString());
+  });
+});
+
 describe('common transaction data (applied by every creator)', () => {
   const build = (overrides: Partial<TransactionCommonData> = {}) =>
     createAccountDeleteTransaction({
@@ -225,6 +244,34 @@ describe('common transaction data (applied by every creator)', () => {
 
   test('does not set a transaction id for an invalid payer', () => {
     expect(build({ payerId: 'nope' }).transactionId).toBeNull();
+  });
+
+  test('validStartNanoOffset shifts the transaction id validStart by that many nanos', () => {
+    const validStart = new Date(Date.now() + 60_000);
+    const base = build({ validStart }).transactionId!.validStart!;
+    const shifted = build({ validStart, validStartNanoOffset: 42 }).transactionId!.validStart!;
+    expect(shifted.seconds.toString()).toBe(base.seconds.toString());
+    expect(shifted.nanos.toNumber() - base.nanos.toNumber()).toBe(42);
+  });
+
+  test('validStartNanoOffset rolls over into seconds', () => {
+    const validStart = new Date(Date.now() + 60_000);
+    const base = build({ validStart }).transactionId!.validStart!;
+    const shifted = build({ validStart, validStartNanoOffset: 1_000_000_000 }).transactionId!
+      .validStart!;
+    expect(shifted.seconds.toNumber()).toBe(base.seconds.toNumber() + 1);
+    expect(shifted.nanos.toNumber()).toBe(base.nanos.toNumber());
+  });
+
+  test('a zero or absent validStartNanoOffset leaves the id unchanged', () => {
+    const validStart = new Date(Date.now() + 60_000);
+    const base = build({ validStart }).transactionId!.toString();
+    expect(build({ validStart, validStartNanoOffset: 0 }).transactionId!.toString()).toBe(base);
+  });
+
+  test('keeps the payer when offsetting, and sets no id for an invalid payer', () => {
+    expect(build({ validStartNanoOffset: 5 }).transactionId?.accountId?.toString()).toBe('0.0.2');
+    expect(build({ payerId: 'nope', validStartNanoOffset: 5 }).transactionId).toBeNull();
   });
 });
 
@@ -930,71 +977,58 @@ describe('createSystemDeleteTransaction', () => {
     const tx = roundtrip(
       createSystemDeleteTransaction({
         ...common,
-        fileId: '0.0.150',
-        contractId: '',
+        fileOrContractId: FileId.fromString('0.0.150'),
         expirationTime: new Date('2026-07-01T00:00:00Z'),
       }),
     );
-    expect(tx).toBeInstanceOf(SystemDeleteTransaction);
-    expect(getSystemDeleteData(tx)).toEqual({
-      fileId: '0.0.150',
-      contractId: '',
-      expirationTime: new Date('2026-07-01T00:00:00Z'),
-    });
+    expect(getSystemDeleteData(tx).fileOrContractId?.toString()).toEqual('0.0.150');
+    expect(getSystemDeleteData(tx).expirationTime).toEqual(new Date('2026-07-01T00:00:00Z'));
   });
 
   test('contract target round-trips', () => {
     const tx = roundtrip(
       createSystemDeleteTransaction({
         ...common,
-        fileId: '',
-        contractId: '0.0.1234',
+        fileOrContractId: ContractId.fromString('0.0.1234'),
         expirationTime: new Date('2026-07-01T00:00:00Z'),
       }),
     );
     const parsed = getSystemDeleteData(tx);
-    expect(parsed.contractId).toBe('0.0.1234');
-    expect(parsed.fileId).toBe('');
+    expect(parsed.fileOrContractId instanceof ContractId).toBe(true);
+    expect(parsed.fileOrContractId?.toString()).toBe('0.0.1234');
   });
 
   test('missing expiration time yields null', () => {
     const tx = roundtrip(
       createSystemDeleteTransaction({
         ...common,
-        fileId: '0.0.150',
-        contractId: '',
+        fileOrContractId: FileId.fromString('0.0.150'),
         expirationTime: null,
       }),
     );
     expect(getSystemDeleteData(tx).expirationTime).toBeNull();
   });
-
-  test('invalid ids are ignored rather than written', () => {
-    const tx = createSystemDeleteTransaction({
-      ...common,
-      fileId: 'nope',
-      contractId: 'nope',
-      expirationTime: null,
-    });
-    expect(tx.fileId).toBeNull();
-    expect(tx.contractId).toBeNull();
-  });
 });
 
 describe('createSystemUndeleteTransaction', () => {
   test('file target round-trips', () => {
-    const tx = roundtrip(
-      createSystemUndeleteTransaction({ ...common, fileId: '0.0.150', contractId: '' }),
-    );
+    const fileId = FileId.fromString('0.0.150');
+    const tx = roundtrip(createSystemUndeleteTransaction({ ...common, fileOrContractId: fileId }));
     expect(tx).toBeInstanceOf(SystemUndeleteTransaction);
-    expect(getSystemUndeleteData(tx)).toEqual({ fileId: '0.0.150', contractId: '' });
+    expect(getSystemUndeleteData(tx).fileOrContractId instanceof FileId).toBe(true);
+    expect(getSystemUndeleteData(tx).fileOrContractId?.toString()).toBe('0.0.150');
   });
 
   test('contract target round-trips', () => {
     const tx = roundtrip(
-      createSystemUndeleteTransaction({ ...common, fileId: '', contractId: '0.0.1234' }),
+      createSystemUndeleteTransaction({
+        ...common,
+        fileOrContractId: ContractId.fromString('0.0.1234'),
+      }),
     );
-    expect(getSystemUndeleteData(tx)).toEqual({ fileId: '', contractId: '0.0.1234' });
+    expect(getSystemUndeleteData(tx)).toEqual({
+      fileOrContractId: ContractId.fromString('0.0.1234'),
+    });
   });
 });
 
@@ -1214,7 +1248,6 @@ describe('Registered node creators', () => {
   });
 
   describe('createRegisteredNodeUpdateTransaction', () => {
-
     const registeredNodeUpdateData = {
       registeredNodeId: '12',
       adminKey,
@@ -1259,7 +1292,6 @@ describe('Registered node creators', () => {
     });
 
     describe('with description changed', () => {
-
       describe('with current: null', () => {
         const currentInfo = { ...registeredNodeInfo, description: null };
 
@@ -1312,7 +1344,6 @@ describe('Registered node creators', () => {
           const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
           expect(tx.description).toBe('cde');
         });
-
       });
     });
 
