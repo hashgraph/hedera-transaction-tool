@@ -141,6 +141,16 @@ function serializeKeyToProtobuf(key: { _toProtobufKey: () => proto.IKey }): Buff
  * The backend checks CachedAccount first - if encodedKey exists, it returns
  * cached data without calling Mirror Node.
  *
+ * updatedAt is set far in the future so the row never counts as stale
+ * (CACHE_STALE_THRESHOLD_MS defaults to 10s). Otherwise the chain service's
+ * cache refresh re-fetches 0.0.2 from the mirror node and replaces the seeded
+ * cached_account_key rows with the real keys, so no transaction matches the
+ * test user.
+ *
+ * refreshToken is also set (a held refresh claim), because the cron and the claim
+ * upsert only take rows whose refreshToken is NULL or whose updatedAt is older than
+ * the reclaim cutoff. With both set, no refresh path can claim the row.
+ *
  * Also creates cached_account_key record linking the public key to the cached account.
  * This is required for the optimized /transaction-nodes endpoint to work.
  *
@@ -167,9 +177,9 @@ async function seedCachedAccount(client: Client, publicKeyHex: string): Promise<
   const cachedAccountResult: QueryResult<{ id: number }> = await client.query(
     `INSERT INTO cached_account (
        account, "mirrorNetwork", "encodedKey",
-       "receiverSignatureRequired", "createdAt", "updatedAt"
+       "receiverSignatureRequired", "createdAt", "updatedAt", "refreshToken"
      )
-     VALUES ($1, $2, $3, false, NOW(), NOW())
+     VALUES ($1, $2, $3, false, NOW(), NOW() + INTERVAL '10 years', '00000000-0000-4000-8000-000000006b36')
      RETURNING id`,
     [accountId, mirrorNetwork, encodedKey],
   );
@@ -427,61 +437,51 @@ export async function seedComplexKeyTransactions(
 async function cleanupAllSeedData(client: Client): Promise<void> {
   console.log('Cleaning up ALL previous seed data...');
 
-  await client.query(
-    `DELETE FROM transaction_group_item
-     WHERE "transactionId" IN (
-       SELECT id FROM "transaction" WHERE description LIKE $1
-     )`,
+  const txCount = await deleteTransactionsWhere(
+    client,
+    `description LIKE $1`,
     [`${SEED_MARKER}%`],
   );
 
-  await client.query(
-    `DELETE FROM transaction_group WHERE description LIKE $1`,
-    [`${SEED_MARKER}%`],
-  );
+  await client.query(`DELETE FROM transaction_group WHERE description LIKE $1`, [
+    `${SEED_MARKER}%`,
+  ]);
 
-  await client.query(
-    `DELETE FROM transaction_signer
-     WHERE "transactionId" IN (
-       SELECT id FROM "transaction" WHERE description LIKE $1
-     )`,
-    [`${SEED_MARKER}%`],
-  );
+  console.log(`Deleted ${txCount} previous seed transactions`);
+}
+
+/**
+ * Delete transactions matching a WHERE clause, along with every table that
+ * references them (none of these FKs cascade).
+ * Add new child tables here when a migration adds a FK to "transaction".
+ */
+async function deleteTransactionsWhere(
+  client: Client,
+  where: string,
+  params: unknown[],
+): Promise<number> {
+  const ids = `SELECT id FROM "transaction" WHERE ${where}`;
 
   await client.query(
     `DELETE FROM transaction_reviewer_list_member
      WHERE "listId" IN (
-       SELECT id FROM transaction_reviewer_list
-       WHERE "transactionId" IN (
-         SELECT id FROM "transaction" WHERE description LIKE $1
-       )
+       SELECT id FROM transaction_reviewer_list WHERE "transactionId" IN (${ids})
      )`,
-    [`${SEED_MARKER}%`],
+    params,
   );
 
-  await client.query(
-    `DELETE FROM transaction_reviewer_list
-     WHERE "transactionId" IN (
-       SELECT id FROM "transaction" WHERE description LIKE $1
-     )`,
-    [`${SEED_MARKER}%`],
-  );
+  for (const table of [
+    'transaction_reviewer_list',
+    'transaction_group_item',
+    'transaction_signer',
+    'transaction_cached_account',
+    'transaction_entity',
+  ]) {
+    await client.query(`DELETE FROM ${table} WHERE "transactionId" IN (${ids})`, params);
+  }
 
-  // Clean up transaction_cached_account links for seed transactions
-  await client.query(
-    `DELETE FROM transaction_cached_account
-     WHERE "transactionId" IN (
-       SELECT id FROM "transaction" WHERE description LIKE $1
-     )`,
-    [`${SEED_MARKER}%`],
-  );
-
-  const txResult = await client.query(
-    `DELETE FROM "transaction" WHERE description LIKE $1`,
-    [`${SEED_MARKER}%`],
-  );
-
-  console.log(`Deleted ${txResult.rowCount} previous seed transactions`);
+  const result = await client.query(`DELETE FROM "transaction" WHERE ${where}`, params);
+  return result.rowCount ?? 0;
 }
 
 /**
@@ -489,6 +489,17 @@ async function cleanupAllSeedData(client: Client): Promise<void> {
  * Ensures clean state for Account Setup - user will need to import mnemonic.
  */
 async function cleanupUserKeys(client: Client, userId: number): Promise<void> {
+  // Transactions created by this user's keys (e.g. via the API in earlier runs) are
+  // not marked with SEED_MARKER but still block the user_key delete via creatorKeyId.
+  const orphaned = await deleteTransactionsWhere(
+    client,
+    `"creatorKeyId" IN (SELECT id FROM user_key WHERE "userId" = $1)`,
+    [userId],
+  );
+  if (orphaned > 0) {
+    console.log(`Deleted ${orphaned} non-seed transactions created by user ${userId}`);
+  }
+
   const keyResult = await client.query(
     `DELETE FROM user_key WHERE "userId" = $1`,
     [userId],
